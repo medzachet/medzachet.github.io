@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Проверка ударений</title>
+<style>
+  :root { --bg: #0b1230; --card: #141d44; --ink: #e8eeff; --mute: #8a97c9; --c1: #4fd8ff; --c2: #a77bff; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.4 system-ui, sans-serif; padding: 16px; }
+  h1 { font-size: 20px; margin: 4px 0 14px; }
+  .row { background: var(--card); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+  .w { font-weight: 700; margin-bottom: 8px; }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button { appearance: none; border: 1px solid #2a3770; background: #1b2658; color: var(--ink); border-radius: 12px; padding: 12px 6px; font: 600 15px system-ui, sans-serif; }
+  button.b { border-color: var(--c1); }
+  input { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 12px; border: 1px solid #2a3770; background: #0f1738; color: var(--ink); font-size: 16px; margin-bottom: 8px; }
+  small { color: var(--mute); }
+</style>
+</head>
+<body>
+<h1>Ударения: А или Б?</h1>
+<div id="list"></div>
+<div class="row">
+  <input id="own" placeholder="Своё слово: ударную букву — заглавной (дигоксИн)">
+  <div class="btns"><button data-own="a">А</button><button class="b" data-own="b">Б</button></div>
+</div>
+<small id="v"></small>
+<script>
+// А — как сейчас, Б — со знаком ударения (U+0301) после ударной гласной
+const WORDS = ['дигоксИн', 'фуросемИд', 'клофелИн', 'атропИн', 'мезатОн', 'гепарИн', 'кордиамИн', 'анальгЕтики'];
+const plain = w => w.toLowerCase();
+const acc = w => w.replace(/[АЕЁИОУЫЭЮЯ]/, m => m.toLowerCase() + '́').toLowerCase();
+let voice = null;
+function pick() {
+  const ru = speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().replace('_', '-').startsWith('ru'));
+  let saved = ''; try { saved = JSON.parse(localStorage.getItem('oz.settings') || '{}').voice || ''; } catch (e) {}
+  voice = ru.find(v => v.voiceURI === saved) || ru.find(v => /enhanced|premium|улучш/i.test(v.voiceURI + v.name)) || ru[0] || null;
+  document.getElementById('v').textContent = voice ? 'Голос: ' + voice.name : 'Русский голос не найден';
+}
+pick(); speechSynthesis.onvoiceschanged = pick;
+function say(t) {
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t); u.lang = 'ru-RU'; if (voice) u.voice = voice;
+  speechSynthesis.speak(u);
+}
+const list = document.getElementById('list');
+for (const w of WORDS) {
+  const row = document.createElement('div'); row.className = 'row';
+  row.innerHTML = `<div class="w"></div><div class="btns"><button>А</button><button class="b">Б</button></div>`;
+  row.querySelector('.w').textContent = acc(w);
+  const [a, b] = row.querySelectorAll('button');
+  a.onclick = () => say(plain(w)); b.onclick = () => say(acc(w));
+  list.append(row);
+}
+document.querySelectorAll('[data-own]').forEach(btn => btn.onclick = () => {
+  const w = document.getElementById('own').value.trim(); if (!w) return;
+  say(btn.dataset.own === 'a' ? plain(w) : acc(w));
+});
+</script>
+</body>
+</html>

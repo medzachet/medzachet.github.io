@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Устный зачёт</title>
+  <meta name="theme-color" content="#070b1a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="bg-dots" aria-hidden="true"></div>
+
+  <!-- Главный: темы -->
+  <main id="home" class="screen">
+    <header class="row">
+      <h1 class="logo">Устный зачёт</h1>
+      <span class="hdr-btns"><button class="icon-btn" data-help aria-label="Справочник">?</button><button class="icon-btn" data-settings aria-label="Настройки">⚙</button></span>
+    </header>
+
+    <button id="resumeBox" class="glass resume banner" hidden>
+      <span class="resume-txt"><b id="resumeTitle"></b><span id="resumeSub"></span></span>
+      <span class="go">›</span>
+    </button>
+
+    <div class="label">Темы</div>
+    <div id="topics" class="topics"></div>
+    <p id="noSpeech" class="note" hidden>Этот браузер не распознаёт речь — отвечать можно текстом. Для голоса открой в Chrome.</p>
+  </main>
+
+  <!-- Тема -->
+  <main id="topic" class="screen" hidden>
+    <header class="row">
+      <button id="topicBack" class="text-btn">← Темы</button>
+      <span class="hdr-btns"><button class="icon-btn" data-help aria-label="Справочник">?</button><button class="icon-btn" data-settings aria-label="Настройки">⚙</button></span>
+    </header>
+    <div class="topic-head">
+      <div id="tRing" class="ring"><div id="tRingNum"></div></div>
+      <div><h2 id="tName"></h2><div id="tSub" class="label"></div></div>
+    </div>
+    <div id="tResumes" class="resumes"></div>
+    <div class="acts">
+      <button id="tCards" class="act main"></button>
+      <button id="tMix" class="act">Микс</button>
+      <button id="tSeq" class="act">По лекции</button>
+      <button id="tErr" class="act">Ошибки</button>
+      <button id="tRand" class="act half">🎲 10 наугад</button>
+      <button id="tDrugs" class="act half">💊 Препараты</button>
+    </div>
+    <div class="label">Разделы</div>
+    <div id="tSections" class="glass list"></div>
+    <details id="tPending" class="glass pending" hidden><summary></summary><p></p></details>
+  </main>
+
+  <!-- Препараты -->
+  <main id="drugsScr" class="screen" hidden>
+    <header class="row"><button id="drugsBack" class="text-btn">← Назад</button></header>
+    <div>
+      <h2 id="dTitle">Препараты</h2>
+      <div id="dSub" class="label" style="margin-top:6px"></div>
+    </div>
+    <div class="acts two">
+      <button id="dRandom" class="act main">🎲 Случайный препарат</button>
+      <button id="dAll" class="act wide">Все вперемешку</button>
+    </div>
+    <div class="label">Группы</div>
+    <div id="dGroups" class="glass list"></div>
+  </main>
+
+  <!-- Незаконченные -->
+  <main id="unfinished" class="screen" hidden>
+    <header class="row"><button id="unfBack" class="text-btn">← Темы</button></header>
+    <h2>Незаконченные</h2>
+    <div id="unfList" class="resumes"></div>
+  </main>
+
+  <!-- Готова? -->
+  <main id="ready" class="screen" hidden>
+    <header class="row"><button id="readyBack" class="text-btn">← Назад</button></header>
+    <div class="glass ready-box">
+      <div id="rdBadge" class="num big"></div>
+      <div id="rdTopic" class="label"></div>
+      <h2 id="rdTitle"></h2>
+      <p id="rdSub" class="hint"></p>
+    </div>
+    <label class="glass tog ready-tog"><span>Читать вопросы вслух</span><input type="checkbox" id="rdSpeak"></label>
+    <div class="bottom"><button id="readyGo" class="btn primary big">▶ Я готова</button></div>
+  </main>
+
+  <!-- Настройки -->
+  <main id="settings" class="screen" hidden>
+    <header class="row"><button id="setBack" class="text-btn">← Назад</button></header>
+    <h2>Настройки</h2>
+    <section class="glass set">
+      <div class="label">Строгость</div>
+      <div class="seg"><button data-mode="train">Тренировка</button><button data-mode="exam">Экзамен</button></div>
+      <p class="hint">Определения всегда проверяются строго.</p>
+    </section>
+    <section class="glass set">
+      <div class="label">Голос</div>
+      <div class="voice-row"><select id="voice" aria-label="Голос"></select><button id="voiceTest" class="icon-btn" aria-label="Прослушать">▶</button></div>
+      <div class="seg"><button data-rate="0.85">Медленнее</button><button data-rate="1">Обычно</button><button data-rate="1.15">Быстрее</button></div>
+      <label class="tog"><span>Читать вопросы вслух</span><input type="checkbox" id="optSpeak"></label>
+      <details class="hint" id="helpAndroid"><summary>Как сменить голос</summary><p>Настройки телефона → Специальные возможности → Синтез речи (Samsung: Общие настройки → Язык и ввод → Преобразование текста в речь) → Синтезатор Google → ⚙ → Установка голосовых данных → Русский. Выбери голос и перезапусти приложение.</p></details>
+      <details class="hint" id="helpIos"><summary>Как добавить голоса</summary><p>Настройки → Универсальный доступ → Устный контент → Голоса → Русский. Скачай голос и перезапусти приложение.</p></details>
+    </section>
+    <section class="glass set">
+      <div class="label">Оформление</div>
+      <div class="seg"><button data-theme-set="light">Светлая</button><button data-theme-set="dark">Тёмная</button><button data-theme-set="system">Авто</button></div>
+    </section>
+    <button class="text-btn small help-link" data-help>? Справочник</button>
+    <p class="disclaimer">Учебный тренажёр по лекциям колледжа. Не медицинская рекомендация — не используй его для подбора лечения.</p>
+  </main>
+
+  <!-- Справочник -->
+  <main id="help" class="screen" hidden>
+    <header class="row"><button id="helpBack" class="text-btn">← Назад</button></header>
+    <h2>Справочник</h2>
+    <div class="glass list help">
+      <details><summary>▶ Карточки</summary><p>Учишь тему по кусочкам. Сначала читаешь несколько карточек одного раздела, листая пальцем, потом отвечаешь на них вперемешку. Пройденные кусочки запоминаются, и кнопка ведёт к следующему.</p></details>
+      <details><summary>Микс</summary><p>Вся тема вперемешку без конца. Невыученное попадается чаще, выученное реже.</p></details>
+      <details><summary>По лекции</summary><p>Вопросы по порядку, как в лекции. Место запоминается — можно продолжить с того же вопроса.</p></details>
+      <details><summary>Ошибки</summary><p>Только вопросы, где ты ошиблась. Ответишь верно сразу и без подсказки — вопрос уйдёт из списка.</p></details>
+      <details><summary>🎲 10 наугад</summary><p>10 случайных вопросов из темы. Каждый раз новые, пока не пройдёшь всю тему по кругу.</p></details>
+      <details><summary>💊 Препараты</summary><p>Вопросы про отдельные препараты: к какой группе относится и что о нём сказано в лекции. Можно случайный препарат, группу или все вперемешку.</p></details>
+      <details><summary>Разделы</summary><p>Нажми на раздел в теме — начнутся карточки именно этого раздела.</p></details>
+      <details><summary>🎤 Как отвечать</summary><p>Удерживай кнопку микрофона и говори, отпусти — запись остановится. Можно говорить в несколько заходов или написать текстом. Потом «Проверить».</p></details>
+      <details><summary>💡 Подсказка и вторая попытка</summary><p>Подсказка открывается по шагу за нажатие. Если ответ неполный, приложение покажет, что уже названо, и даст вторую попытку. «Не знаю — ответ» сразу покажет правильный ответ.</p></details>
+      <details><summary>Засчитать</summary><p>Если ответила верно, но другими словами, и проверка не поняла — нажми «Засчитать».</p></details>
+      <details><summary>Выучено</summary><p>Вопрос считается выученным, когда ты дважды ответила на него сразу и без подсказки. Ошибка сбрасывает счёт.</p></details>
+      <details><summary>⏸ Пауза и «Продолжить»</summary><p>Пауза сохраняет занятие. Продолжить можно из темы или с главного экрана — строка «Незаконченные».</p></details>
+      <details><summary>🔊 и ↶ Прошлые</summary><p>🔊 — прочитать вопрос ещё раз. ↶ — посмотреть прошлые вопросы этого занятия.</p></details>
+      <details><summary>Тренировка или Экзамен</summary><p>В настройках. «Тренировка» прощает мелочи, «Экзамен» требует всё целиком. Определения всегда проверяются строго.</p></details>
+      <details><summary>Прогресс</summary><p>Хранится только в этом телефоне и этом браузере. На другом телефоне или по другой ссылке начнётся с нуля.</p></details>
+    </div>
+    <p class="disclaimer">Учебный тренажёр по лекциям колледжа. Не медицинская рекомендация — не используй его для подбора лечения.</p>
+  </main>
+
+  <!-- Карточки блока -->
+  <main id="study" class="screen" hidden>
+    <header class="row">
+      <button id="studyBack" class="text-btn" aria-label="Пауза: сохранить и выйти">⏸ Пауза</button>
+      <span id="studyScore" class="label"></span>
+    </header>
+    <article id="studyCard" class="glass card study-card">
+      <div class="qmeta"><span id="sTopic"></span><span id="sKind" class="tag"></span></div>
+      <p id="sQ" class="qtext"></p>
+      <div id="sA" class="study-ans"></div>
+      <button id="sListen" class="text-btn small">🔊 Прослушать</button>
+    </article>
+    <div id="sDots" class="dots-nav" aria-hidden="true"></div>
+    <div class="study-nav">
+      <button id="sPrev" class="btn" aria-label="Назад">←</button>
+      <button id="sNext" class="btn primary">Дальше</button>
+    </div>
+    <button id="sSkip" class="text-btn center">Сразу к опросу</button>
+  </main>
+
+  <!-- Опрос -->
+  <main id="quiz" class="screen" hidden>
+    <header class="row">
+      <button id="back" class="text-btn" aria-label="Пауза: сохранить и выйти">⏸ Пауза</button>
+      <span id="score" class="label"></span>
+      <button id="toResults" class="text-btn">Итоги</button>
+    </header>
+    <article class="glass card">
+      <div class="qmeta"><span id="qtopic"></span><span id="qkind" class="tag"></span></div>
+      <p id="qtext" class="qtext"></p>
+      <div class="card-actions">
+        <button id="repeat" class="text-btn small">🔊 Повторить</button>
+        <button id="peekBtn" class="text-btn small" hidden>↶ Прошлые</button>
+      </div>
+    </article>
+    <div id="chips" class="chips" aria-live="polite"></div>
+    <div id="feedback" class="feedback" aria-live="polite" hidden></div>
+    <div id="hints" class="hints" aria-live="polite" hidden></div>
+
+    <div id="answerBox" class="answer">
+      <textarea id="answer" class="glass" rows="3" placeholder="Удерживай кнопку и говори — или пиши"></textarea>
+      <div class="controls">
+        <button id="hintBtn" class="side-btn"><span class="ico">💡</span><span id="hintLabel">Подсказка</span></button>
+        <button id="mic" class="mic" aria-label="Микрофон: удерживай и говори">
+          <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+        <button id="checkBtn" class="side-btn"><span class="ico">✓</span><span>Проверить</span></button>
+      </div>
+      <div id="micLabel" class="mic-label">Удерживай и говори</div>
+      <div class="under">
+        <button id="clear" class="text-btn small">✕ Очистить</button>
+        <button id="dontKnow" class="text-btn small">Не знаю — ответ</button>
+      </div>
+    </div>
+
+    <div id="after" class="after" hidden>
+      <button id="accept" class="btn">Засчитать — я ответила верно</button>
+      <button id="next" class="btn primary big">Дальше</button>
+    </div>
+  </main>
+
+  <!-- Просмотр прошлых вопросов (без голоса и без перезачёта) -->
+  <div id="peek" class="peek" hidden>
+    <div class="glass peek-sheet">
+      <div class="row"><span id="peekPos" class="label"></span><button id="peekClose" class="icon-btn sm" aria-label="Закрыть">✕</button></div>
+      <div class="qmeta"><span id="peekTopic"></span><span id="peekRes" class="tag"></span></div>
+      <p id="peekQ" class="qtext"></p>
+      <div id="peekA" class="study-ans"></div>
+      <div class="peek-nav">
+        <button id="peekOlder" class="btn">← Раньше</button>
+        <button id="peekNewer" class="btn">Позже →</button>
+      </div>
+      <button id="peekBack" class="btn primary">Вернуться к вопросу</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <!-- Поддерживающий «пузырь» -->
+  <div id="cheer" class="cheer" role="status" aria-live="polite" hidden><span id="cheerEmoji" class="cheer-emoji"></span><span id="cheerText"></span></div>
+
+  <!-- Итоги -->
+  <main id="results" class="screen" hidden>
+    <header class="row"><button id="resBack" class="text-btn">← Тема</button></header>
+    <h2 id="resTitle">Итоги</h2>
+    <div class="stats">
+      <div class="glass"><b id="rAsked">0</b><span>вопросов</span></div>
+      <div class="glass ok"><b id="rOk">0</b><span>верно</span></div>
+      <div class="glass bad"><b id="rMiss">0</b><span>ошибок</span></div>
+    </div>
+    <section id="missBlock">
+      <div class="label">Ошибки — проверь себя</div>
+      <ol id="missList" class="miss-list"></ol>
+    </section>
+    <p id="noMiss" class="hint center" hidden>Ошибок нет — отлично!</p>
+    <div class="bottom col">
+      <button id="retry" class="btn primary big">Повторить ошибки</button>
+      <button id="restudy" class="btn" hidden>Карточки блока ещё раз</button>
+      <button id="resume" class="btn">Продолжить</button>
+    </div>
+  </main>
+
+  <script src="bank/_core.js"></script>
+  <script src="bank/vocab.js"></script>
+  <script src="bank/farm_def.js"></script>
+  <script src="bank/farm_t01.js"></script>
+  <script src="bank/farm_t03.js"></script>
+  <script src="bank/farm_t04.js"></script>
+  <script src="bank/farm_t05.js"></script>
+  <script src="bank/farm_t06.js"></script>
+  <script src="bank/farm_t07.js"></script>
+  <script src="bank/farm_t08.js"></script>
+  <script src="bank/farm_drugs.js"></script>
+  <script src="checker.js"></script>
+  <script src="cheers.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
