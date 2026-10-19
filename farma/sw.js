@@ -1,11 +1,13 @@
 // Офлайн: сначала сеть (чтобы новые карточки подтягивались), при её отсутствии — кэш.
-const CACHE = 'oz-v13';
+// cache: 'no-cache' — всегда сверяться с сервером, иначе браузер до 10 минут отдаёт старую копию (GitHub Pages: max-age=600).
+const CACHE = 'oz-v14';
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+self.addEventListener('activate', e => e.waitUntil(
+  caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' })
       .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return res; })
       .catch(() => caches.match(e.request))
   );
