@@ -10,8 +10,8 @@ function drop(key) { try { localStorage.removeItem(key); } catch {} }
 const settings = Object.assign({ mode: 'train', voice: '', rate: 1, speak: true, theme: 'system', seqPos: {}, blocksDone: {}, randSeen: {} },
   load('oz.settings', {}));
 const progress = load('oz.progress', {}); // cardId → { box, seen, ok }
-if (settings.blocksVer !== 3) {
-  settings.blocksVer = 3; settings.blocksDone = {};
+if (settings.blocksVer !== 4) {
+  settings.blocksVer = 4; settings.blocksDone = {};
   const ss = load('oz.sessions', {}); for (const k of Object.keys(ss)) if (k.endsWith(':block')) delete ss[k];
   save('oz.sessions', ss); save('oz.settings', settings);
 }
