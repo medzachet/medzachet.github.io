@@ -10,7 +10,9 @@
   h1 { font-size: 20px; margin: 4px 0 14px; }
   .row { background: var(--card); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
   .w { font-weight: 700; margin-bottom: 8px; }
-  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .how { color: var(--mute); margin: -6px 0 14px; font-size: 14px; }
+  button.c { border-color: var(--c2); }
   button { appearance: none; border: 1px solid #2a3770; background: #1b2658; color: var(--ink); border-radius: 12px; padding: 12px 6px; font: 600 15px system-ui, sans-serif; }
   button.b { border-color: var(--c1); }
   input { width: 100%; box-sizing: border-box; padding: 12px; border-radius: 12px; border: 1px solid #2a3770; background: #0f1738; color: var(--ink); font-size: 16px; margin-bottom: 8px; }
@@ -18,18 +20,22 @@
 </style>
 </head>
 <body>
-<h1>Ударения: А или Б?</h1>
+<h1>Как звучит лучше?</h1>
+<p class="how">А — как сейчас · Б — с ударением · В — по частям</p>
 <div id="list"></div>
 <div class="row">
-  <input id="own" placeholder="Своё слово: ударную букву — заглавной (дигоксИн)">
-  <div class="btns"><button data-own="a">А</button><button class="b" data-own="b">Б</button></div>
+  <input id="own" placeholder="Своё слово: ударная — заглавной, части — через дефис (холино-миметИки)">
+  <div class="btns"><button data-own="a">А</button><button class="b" data-own="b">Б</button><button class="c" data-own="c">В</button></div>
 </div>
 <small id="v"></small>
 <script>
-// А — как сейчас, Б — со знаком ударения (U+0301) после ударной гласной
-const WORDS = ['дигоксИн', 'фуросемИд', 'клофелИн', 'атропИн', 'мезатОн', 'гепарИн', 'кордиамИн', 'анальгЕтики'];
-const plain = w => w.toLowerCase();
+// А — как сейчас, Б — со знаком ударения (U+0301) после ударной гласной, В — части через пробел + ударение
+// В записи: ударная гласная заглавной, части — через дефис
+const WORDS = ['холино-миметИки', 'адрено-миметИки', 'антихолин-эстерАзные', 'гангли-облокатОры', 'адрено-блокатОры', 'симпато-лИтики', 'ацетил-холИн', 'бензил-пенициллИн', 'антико-агулЯнты', 'глюко-кортико-стерОиды', 'фибрино-лИтики', 'холин-эстерАза'];
+const plain = w => w.replace(/-/g, '').toLowerCase();
+const parts = w => acc(w).replace(/-/g, ' ');
 const acc = w => w.replace(/[АЕЁИОУЫЭЮЯ]/, m => m.toLowerCase() + '́').toLowerCase();
+const accWord = w => acc(w).replace(/-/g, '');
 let voice = null;
 function pick() {
   const ru = speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().replace('_', '-').startsWith('ru'));
@@ -46,15 +52,16 @@ function say(t) {
 const list = document.getElementById('list');
 for (const w of WORDS) {
   const row = document.createElement('div'); row.className = 'row';
-  row.innerHTML = `<div class="w"></div><div class="btns"><button>А</button><button class="b">Б</button></div>`;
-  row.querySelector('.w').textContent = acc(w);
-  const [a, b] = row.querySelectorAll('button');
-  a.onclick = () => say(plain(w)); b.onclick = () => say(acc(w));
+  row.innerHTML = `<div class="w"></div><div class="btns"><button>А</button><button class="b">Б</button><button class="c">В</button></div>`;
+  row.querySelector('.w').textContent = accWord(w);
+  const [a, b, c] = row.querySelectorAll('button');
+  a.onclick = () => say(plain(w)); b.onclick = () => say(accWord(w)); c.onclick = () => say(parts(w));
   list.append(row);
 }
 document.querySelectorAll('[data-own]').forEach(btn => btn.onclick = () => {
   const w = document.getElementById('own').value.trim(); if (!w) return;
-  say(btn.dataset.own === 'a' ? plain(w) : acc(w));
+  const k = btn.dataset.own;
+  say(k === 'a' ? plain(w) : k === 'b' ? accWord(w) : parts(w));
 });
 </script>
 </body>
