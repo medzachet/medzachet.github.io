@@ -304,3 +304,5 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .help p { margin: 0; padding: 0 16px 14px; font-size: 14.5px; color: var(--muted); line-height: 1.45; }
 .help-link { align-self: flex-start; }
 .disclaimer { margin: 4px 2px 0; font-size: 12.5px; color: var(--muted); opacity: .8; line-height: 1.4; }
+.inapp { display: flex; align-items: flex-start; gap: 10px; }
+.inapp span { flex: 1; }

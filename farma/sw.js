@@ -1,5 +1,5 @@
 // Офлайн: сначала сеть (чтобы новые карточки подтягивались), при её отсутствии — кэш.
-const CACHE = 'oz-v9';
+const CACHE = 'oz-v10';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {

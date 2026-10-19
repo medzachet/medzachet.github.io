@@ -84,6 +84,8 @@ function show(screen) {
   window.scrollTo(0, 0);
   if (screen !== 'home' && !hasGuard) { history.pushState({ oz: 1 }, ''); hasGuard = true; }
 }
+function armGuard() { if (screenNow !== 'home' && !hasGuard) { history.pushState({ oz: 1 }, ''); hasGuard = true; } }
+document.addEventListener('pointerdown', armGuard, true);
 window.addEventListener('popstate', () => {
   hasGuard = false;
   if (screenNow === 'home') return toast('Нажми «Назад» ещё раз, чтобы выйти');
@@ -147,7 +149,11 @@ function renderHome() {
   }
   renderResume();
   $('noSpeech').hidden = !!Recognition;
+  $('inApp').hidden = !IN_APP || load('oz.inAppHidden', false);
 }
+// Встроенный браузер (Телеграм, ВК, Инстаграм): «Назад» телефона закрывает его целиком
+const IN_APP = /; wv\)|Telegram|Instagram|FBAN|FBAV|VKAndroidApp|vkclient/i.test(navigator.userAgent);
+$('inAppClose').onclick = () => { save('oz.inAppHidden', true); $('inApp').hidden = true; };
 
 // ── Тема ──
 let curTid = null;
@@ -596,7 +602,8 @@ $('studyBack').onclick = () => pauseToTopic();
   card.addEventListener('pointerup', e => {
     if (x0 === null) return;
     const dx = e.clientX - x0; x0 = null;
-    if (Math.abs(dx) > 60) studyMove(dx < 0 ? 1 : -1);
+    // с последней карточки в опрос — только кнопкой, не свайпом
+    if (Math.abs(dx) > 60 && !(dx < 0 && block.studyIdx === block.cards.length - 1)) studyMove(dx < 0 ? 1 : -1);
   });
 })();
 
