@@ -169,10 +169,9 @@ h2 { font: 700 21px/1.2 Unbounded, Manrope, sans-serif; margin: 0; letter-spacin
 .tog input { width: 22px; height: 22px; accent-color: var(--c1); }
 
 /* ── Опрос: вопрос всегда на виду ── */
-#quiz.screen { min-height: auto; }
 #quiz .card { position: sticky; top: 6px; z-index: 6; background: linear-gradient(var(--card2), var(--card2)), var(--bg); }
-#quiz .answer { margin-top: 4px; }
-#quiz .after { margin-top: 4px; }
+/* поле ответа и микрофон — внизу, под большим пальцем; при открытой клавиатуре экран сжимается и они поднимаются */
+#quiz .answer, #quiz .after { margin-top: auto; padding-top: 4px; }
 
 /* ── Карточка вопроса ── */
 .card { padding: 18px; display: flex; flex-direction: column; gap: 8px; }
