@@ -80,6 +80,7 @@ let hasGuard = false;
 function show(screen) {
   if ((screen === 'settings' || screen === 'help') && screenNow !== 'settings' && screenNow !== 'help') screenBefore = screenNow;
   screenNow = screen;
+  rememberScreen(screen);
   for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
   window.scrollTo(0, 0);
   if (screen !== 'home' && !hasGuard) { history.pushState({ oz: 1 }, ''); hasGuard = true; }
@@ -679,7 +680,7 @@ function renderUnfinished() {
 }
 $('resumeBox').onclick = () => { renderUnfinished(); show('unfinished'); };
 $('unfBack').onclick = () => { renderHome(); show('home'); };
-function resumeSession(key, from) {
+function resumeSession(key, from, direct) {
   const raw = loadSessions()[key];
   if (!raw || !TOPIC[raw.tid]) return;
   const s = sessionInfo(key, raw);
@@ -692,13 +693,15 @@ function resumeSession(key, from) {
   if (block && block.phase === 'study') return showStudy();
   if (s.kind === 'rand') { randList = ids(s.rand); queue = new Array(s.total || RAND_N); }
   if (s.kind === 'drugs') { run.scope = s.scope; drugMode = s.drugMode; drugList = ids(s.drugs); queue = new Array(s.total || drugList.length); }
-  showReady(s.kind === 'drugs' && s.scope !== 'all' ? s.scope : s.tid, 'Продолжение', s.what, () => {
+  const go = () => {
     show('quiz');
     if (s.currentId && CARD[s.currentId]) {
       if (isSeq()) seqIndex = settings.seqPos[s.tid] || 0;
       showCard(CARD[s.currentId]);
     } else nextCard();
-  }, from);
+  };
+  if (direct) return go();
+  showReady(s.kind === 'drugs' && s.scope !== 'all' ? s.scope : s.tid, 'Продолжение', s.what, go, from);
 }
 
 // ── Ход опроса ──
@@ -1050,7 +1053,42 @@ $('resume').onclick = () => {
 };
 $('restudy').onclick = () => startBlock(run.tid, block.idx);
 
+// ── Обновление страницы: остаёмся на том же экране ──
+// Запоминаем, где были; при перезагрузке (не при обычном открытии) возвращаемся туда.
+function rememberScreen(screen) {
+  let last = { screen };
+  if (screen === 'topic') last.tid = curTid;
+  else if (screen === 'drugsScr') last.scope = drugScope;
+  else if (screen === 'quiz' || screen === 'study') last.key = sessKey();
+  else if (screen === 'results' || screen === 'ready') last = run.kind === 'drugs' ? { screen: 'drugsScr', scope: run.scope || 'all' } : { screen: 'topic', tid: run.tid };
+  else if (screen === 'settings' || screen === 'help') last = { screen, back: screenBefore, tid: curTid };
+  save('oz.last', last);
+}
+function restoreScreen() {
+  const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+  if (!nav || nav.type !== 'reload') return;
+  const last = load('oz.last', null);
+  if (!last) return;
+  try {
+    if ((last.screen === 'quiz' || last.screen === 'study') && loadSessions()[last.key]) {
+      const tid = last.key.startsWith('drugs:') ? null : last.key.split(':')[0];
+      if (tid && TOPIC[tid]) curTid = tid;
+      return resumeSession(last.key, 'topic', true);
+    }
+    if (last.screen === 'topic' && TOPIC[last.tid]) return openTopic(last.tid);
+    if (last.screen === 'drugsScr') return openDrugs(last.scope || 'all');
+    if (last.screen === 'unfinished' && allSessions().length) { renderUnfinished(); return show('unfinished'); }
+    if (last.screen === 'settings' || last.screen === 'help') {
+      if (TOPIC[last.tid]) curTid = last.tid;
+      screenNow = last.back || 'home';
+      if (last.screen === 'settings') renderSettings();
+      return show(last.screen);
+    }
+  } catch (e) { renderHome(); show('home'); }
+}
+
 applyTheme();
 updateMic();
 renderHome();
+restoreScreen();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
