@@ -451,7 +451,7 @@ function drugGroups(scope) {
   }
   return out;
 }
-let drugScope = 'all';
+let drugScope = 'all', drugsFromAll = false;
 function openDrugs(scope) {
   drugScope = scope;
   const names = drugNames(scope);
@@ -464,7 +464,7 @@ function openDrugs(scope) {
     row.className = 'sec';
     row.innerHTML = `<span class="num">${k + 1}</span><span class="sname"></span>${scope === 'all' ? `<span class="tb">${esc(badge(TOPIC[g.tid]))}</span>` : ''}<small>${g.drugs.size}</small>`;
     row.querySelector('.sname').textContent = g.name;
-    row.onclick = () => startDrugs(scope, 'group', g);
+    row.onclick = () => { drugsFromAll = true; openDrugs(g.tid); };   // лекция → три режима: случайный, микс, по порядку
     box.append(row);
   });
   show('drugsScr');
@@ -489,11 +489,15 @@ function startDrugs(scope, mode, g, direct) {
   if (direct) return go();
   showReady(scope === 'all' ? 'drugs' : scope, title, sub, go, 'drugs');
 }
-$('tDrugs').onclick = () => openDrugs(curTid);
+$('tDrugs').onclick = () => { drugsFromAll = false; openDrugs(curTid); };
 $('dRandom').onclick = () => startDrugs(drugScope, 'random');
 $('dAll').onclick = () => startDrugs(drugScope, 'all');
 $('dSeq').onclick = () => startDrugs(drugScope, 'seq');
-$('drugsBack').onclick = () => { if (drugScope === 'all') { renderHome(); show('home'); } else openTopic(drugScope); };
+$('drugsBack').onclick = () => {
+  if (drugScope === 'all') { drugsFromAll = false; renderHome(); show('home'); }
+  else if (drugsFromAll) openDrugs('all');
+  else openTopic(drugScope);
+};
 
 // «10 наугад»: каждый раз новые вопросы, пока не пройдёт вся тема по кругу
 const RAND_N = 10;
