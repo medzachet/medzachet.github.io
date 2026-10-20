@@ -443,9 +443,10 @@ const drugNames = scope => [...new Set(drugCards(scope).map(c => c.drug))];
 function drugGroups(scope) {
   const out = [];
   for (const c of drugCards(scope)) {
-    const key = c.tid + '|' + c.s;
+    // все темы — по лекциям (тогда «к какой группе относится» имеет смысл); в теме — по группам
+    const key = scope === 'all' ? c.tid : c.tid + '|' + c.s;
     let g = out.find(x => x.key === key);
-    if (!g) out.push(g = { key, tid: c.tid, name: c.s, cards: [], drugs: new Set() });
+    if (!g) out.push(g = { key, tid: c.tid, name: scope === 'all' ? shortName(TOPIC[c.tid]) : c.s, cards: [], drugs: new Set() });
     g.cards.push(c); g.drugs.add(c.drug);
   }
   return out;
@@ -811,24 +812,29 @@ function refBlock() { return current.a ? `<div class="ref"><b>По лекции<
 // ── Подсказки: переформулировка → начало ответа / первые буквы → по одному пункту ──
 function firstWord(s) { return (s.match(/[A-Za-zА-Яа-яЁё0-9-]{2,}/) || [s])[0]; }
 function stub(s, n) { const w = firstWord(s); return w.length <= n ? w : w.slice(0, n) + '…'; }
+// Подсказки не раскрывают ответ: 1) первые буквы, 2) начало слов, 3) кусок другого слова из пункта, 4) наводящий вопрос
+const HINT_SKIP = new Set(['и', 'в', 'во', 'на', 'при', 'с', 'со', 'по', 'для', 'не', 'от', 'до', 'из', 'к', 'или', 'а', 'то', 'что', 'как', 'же', 'это', 'том', 'числе']);
+const hintWords = m => (m.match(/[A-Za-zА-Яа-яЁё0-9-]+/g) || []).filter(w => w.length > 2 && !HINT_SKIP.has(w.toLowerCase()));
+const cut = (w, n) => (w.length <= n + 1 ? w.slice(0, Math.max(1, w.length - 2)) : w.slice(0, n)) + '…';
 function hintList() {
   const st = Checker.status(current, found, modeFor(current));
-  const miss = st.missing.map(i => current.items[i].t);
+  const miss = st.missing.map(i => current.items[i]);
   const out = [];
-  if (current.h) out.push(['Иначе', current.h]);
-  if (current.t === 'list') {
-    out.push(['Осталось', `${miss.length} ${plural(miss.length, 'пункт', 'пункта', 'пунктов')}. Первые буквы: ${miss.map(m => firstWord(m)[0].toUpperCase() + '…').join(', ')}`]);
-    out.push(['Начало', miss.map(m => stub(m, 4)).join(', ')]);
-    miss.slice(0, Math.max(0, miss.length - 1)).forEach(m => out.push(['Один из пунктов', m]));
-  } else {
-    const core = (current.a || '').split(/\s+—\s+/).slice(-1)[0];
-    const words = core.split(/\s+/).slice(0, 2).join(' ');
-    if (words) out.push(['Начало ответа', words + '…']);
-    // для определений — самое длинное слово пункта: это обычно термин
-    const key = m => (m.match(/[А-Яа-яЁё-]{4,}/g) || [m]).sort((x, y) => y.length - x.length)[0];
-    if (miss.length) out.push(['Ключевые слова', miss.map(m => stub(key(m), 5)).join(', ')]);
-    miss.slice(0, Math.max(0, miss.length - 1)).forEach(m => out.push(['Не хватает', m]));
-  }
+  // наводящий вопрос автора — только если в нём нет самих ключевых слов ответа
+  const h = (current.h || '').toLowerCase().replace(/ё/g, 'е');
+  const words = miss.map(it => hintWords(it.t));
+  const n = miss.length;
+  const lead = n > 1 ? `${n} ${plural(n, 'пункт', 'пункта', 'пунктов')}. ` : '';
+  out.push(['Первые буквы', lead + words.map(ws => (ws[0] || '?')[0].toUpperCase() + '…').join(', ')]);
+  out.push(['Начало', words.map(ws => ws[0] ? cut(ws[0], 4) : '?').join(', ')]);
+  // третья ступень — половина другого слова из пункта (для фраз)
+  const more = words.map(ws => {
+    if (ws.length < 2) return null;
+    const w = ws[1 + (audioKey(ws.join(' ')).length + ws.length) % (ws.length - 1)];
+    return cut(w, Math.ceil(w.length / 2));
+  }).filter(Boolean);
+  if (more.length) out.push(['Ещё слово', more.join(', ')]);
+  if (h && !miss.some(it => it.k.some(k => k.length > 3 && h.includes(k.split(' ')[0])))) out.push(['Наводка', current.h]);
   return out;
 }
 $('hintBtn').onclick = () => {
