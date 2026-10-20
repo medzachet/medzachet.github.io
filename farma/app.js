@@ -770,6 +770,16 @@ function showCard(card) {
   say(current.q);
 }
 $('repeat').onclick = () => { abortListening(); speak(current.q); };
+// ⚑ Замечание: бот @medzachetbot сразу знает, о какой карточке речь
+const BOT = 'medzachetbot';
+function flagCard(c) {
+  if (!c) return;
+  abortListening(); hush();
+  saveSession();
+  window.open(`https://t.me/${BOT}?start=c_${c.id}`, '_blank');
+}
+$('flagQ').onclick = () => flagCard(current);
+$('flagS').onclick = () => flagCard(block && block.cards[block.studyIdx]);
 function renderSpeakTog() { $('speakTog').textContent = settings.speak ? '🔊 Вслух' : '🔇 Без звука'; }
 $('speakTog').onclick = () => { settings.speak = !settings.speak; saveSettings(); if (!settings.speak) hush(); renderSpeakTog(); };
 

@@ -312,3 +312,5 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .inapp span { flex: 1; }
 .ver { margin: 0 2px; font-size: 11.5px; color: var(--muted); opacity: .6; }
 .speak-tog { margin-left: auto; }
+.flag { opacity: .7; }
+.flag-s { align-self: flex-end; margin-top: 4px; }
