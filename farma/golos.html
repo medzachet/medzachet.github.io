@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Выбор голоса</title>
+<style>
+  :root { --bg: #0b1230; --card: #141d44; --ink: #e8eeff; --mute: #8a97c9; --c1: #4fd8ff; --c2: #a77bff; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, sans-serif; padding: 16px; }
+  h1 { font-size: 21px; margin: 4px 0 6px; }
+  p.how { color: var(--mute); margin: 0 0 14px; font-size: 14px; }
+  .row { background: var(--card); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+  .n { font-weight: 700; margin-bottom: 8px; }
+  .n small { color: var(--mute); font-weight: 500; }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button { appearance: none; border: 1px solid #2a3770; background: #1b2658; color: var(--ink); border-radius: 12px; padding: 12px 6px; font: 600 15px system-ui, -apple-system, sans-serif; }
+  button.b { border-color: var(--c1); }
+  .txt { color: var(--mute); font-size: 13.5px; margin-top: 14px; }
+</style>
+</head>
+<body>
+<h1>Какой голос лучше?</h1>
+<p class="how">Один и тот же текст. «Сам» — голос расставляет ударения сам, «Подсказано» — ударения подсказаны вручную.</p>
+<div class="row"><div class="n">0. Как сейчас <small>голос телефона</small></div>
+  <div class="btns"><button id="sys">Сам</button><button class="b" id="sysAcc">Подсказано</button></div></div>
+<div class="row"><div class="n">1. Светлана <small>нейроголос Microsoft</small></div>
+  <div class="btns"><button data-f="svetlana_auto">Сам</button><button class="b" data-f="svetlana_manual">Подсказано</button></div></div>
+<div class="row"><div class="n">2. Ксения <small>голос Silero</small></div>
+  <div class="btns"><button data-f="silero_xenia_auto">Сам</button><button class="b" data-f="silero_xenia_manual">Подсказано</button></div></div>
+<div class="row"><div class="n">3. Бая <small>голос Silero</small></div>
+  <div class="btns"><button data-f="silero_baya_auto">Сам</button><button class="b" data-f="silero_baya_manual">Подсказано</button></div></div>
+<p class="txt">Текст: «Назови холиномиметики, ганглиоблокаторы и антихолинэстеразные средства. Глюкокортикостероиды, фибринолитики, бензилпенициллин.»</p>
+<script>
+const TEXT = 'Назови холиномиметики, ганглиоблокаторы и антихолинэстеразные средства. Глюкокортикостероиды, фибринолитики, бензилпенициллин.';
+const ACC = 'Назови холиномиме́тики, ганглиоблокато́ры и антихолинэстера́зные средства. Глюкокортикостеро́иды, фибриноли́тики, бензилпеницилли́н.';
+let audio = null;
+function stop() { if (audio) { audio.pause(); audio = null; } if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { stop(); audio = new Audio('golos/' + b.dataset.f + '.mp3'); audio.play(); });
+function sys(t) {
+  stop();
+  const ru = speechSynthesis.getVoices().filter(v => v.lang.toLowerCase().replace('_', '-').startsWith('ru'));
+  let saved = ''; try { saved = JSON.parse(localStorage.getItem('oz.settings') || '{}').voice || ''; } catch (e) {}
+  const u = new SpeechSynthesisUtterance(t); u.lang = 'ru-RU';
+  const v = ru.find(x => x.voiceURI === saved) || ru[0]; if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+document.getElementById('sys').onclick = () => sys(TEXT);
+document.getElementById('sysAcc').onclick = () => sys(ACC);
+</script>
+</body>
+</html>

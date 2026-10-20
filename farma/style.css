@@ -169,6 +169,9 @@ h2 { font: 700 21px/1.2 Unbounded, Manrope, sans-serif; margin: 0; letter-spacin
 .tog input { width: 22px; height: 22px; accent-color: var(--c1); }
 
 /* ── Опрос: вопрос всегда на виду ── */
+/* Опрос привязан к видимой части экрана (visualViewport): на iPhone клавиатура не уводит вопрос вверх */
+#quiz.screen { position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-h, 100vh); min-height: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 #quiz .card { position: sticky; top: 6px; z-index: 6; background: linear-gradient(var(--card2), var(--card2)), var(--bg); }
 /* поле ответа и микрофон — внизу, под большим пальцем; при открытой клавиатуре экран сжимается и они поднимаются */
 #quiz .answer, #quiz .after { margin-top: auto; padding-top: 4px; }

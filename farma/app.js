@@ -854,6 +854,7 @@ function submit() {
     }
     renderChips(missing, left);
     $('answer').value = '';
+    keepAnswerVisible();
     say(speech);
     return;
   }
@@ -1052,6 +1053,21 @@ $('resume').onclick = () => {
   show('quiz'); nextCard();
 };
 $('restudy').onclick = () => startBlock(run.tid, block.idx);
+
+// ── Видимая часть экрана: при открытой клавиатуре (особенно на iPhone) опрос сжимается до неё ──
+const VV = window.visualViewport;
+function syncViewport() {
+  if (!VV) return;
+  const st = document.documentElement.style;
+  st.setProperty('--vv-h', VV.height + 'px');
+  st.setProperty('--vv-top', VV.offsetTop + 'px');
+  keepAnswerVisible();
+}
+// пишешь с клавиатуры — поле ответа остаётся на виду под вопросом
+function keepAnswerVisible() {
+  if (screenNow === 'quiz' && document.activeElement === $('answer')) requestAnimationFrame(() => $('answer').scrollIntoView({ block: 'nearest' }));
+}
+if (VV) { VV.addEventListener('resize', syncViewport); VV.addEventListener('scroll', syncViewport); syncViewport(); }
 
 // ── Обновление страницы: остаёмся на том же экране ──
 // Запоминаем, где были; при перезагрузке (не при обычном открытии) возвращаемся туда.
