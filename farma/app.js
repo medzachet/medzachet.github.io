@@ -457,7 +457,8 @@ function openDrugs(scope) {
   $('dTitle').textContent = scope === 'all' ? 'Препараты · все темы' : `Препараты · ${shortName(TOPIC[scope])}`;
   $('dSub').textContent = `${names.length} препаратов · ${drugCards(scope).length} вопросов`;
   const box = $('dGroups'); box.innerHTML = '';
-  drugGroups(scope).forEach((g, k) => {
+  $('dGroupsLabel').hidden = box.hidden = scope !== 'all';      // в теме — только три режима
+  if (scope === 'all') drugGroups(scope).forEach((g, k) => {
     const row = document.createElement('button');
     row.className = 'sec';
     row.innerHTML = `<span class="num">${k + 1}</span><span class="sname"></span>${scope === 'all' ? `<span class="tb">${esc(badge(TOPIC[g.tid]))}</span>` : ''}<small>${g.drugs.size}</small>`;
@@ -467,7 +468,7 @@ function openDrugs(scope) {
   });
   show('drugsScr');
 }
-function startDrugs(scope, mode, g) {
+function startDrugs(scope, mode, g, direct) {
   resetRun('drugs', 'drugs');
   run.scope = scope; drugMode = mode;
   let list, title, sub;
@@ -477,15 +478,20 @@ function startDrugs(scope, mode, g) {
     title = '🎲 Случайный препарат'; sub = `${list.length} ${plural(list.length, 'вопрос', 'вопроса', 'вопросов')} об одном препарате`;
   } else if (mode === 'group') {
     list = shuffle(g.cards); title = g.name; sub = `${g.drugs.size} препаратов · ${list.length} вопросов вперемешку`;
+  } else if (mode === 'seq') {
+    list = drugCards(scope); title = 'По порядку'; sub = `${drugNames(scope).length} препаратов · ${list.length} вопросов по лекции`;
   } else {
-    list = shuffle(drugCards(scope)); title = 'Все препараты'; sub = `${list.length} вопросов вперемешку`;
+    list = shuffle(drugCards(scope)); title = 'Микс'; sub = `${list.length} вопросов вперемешку`;
   }
   drugList = list; queue = list.slice();
-  showReady(scope === 'all' ? 'drugs' : scope, title, sub, () => { dropSession(sessKey()); show('quiz'); nextCard(); }, 'drugs');
+  const go = () => { dropSession(sessKey()); show('quiz'); nextCard(); };
+  if (direct) return go();
+  showReady(scope === 'all' ? 'drugs' : scope, title, sub, go, 'drugs');
 }
 $('tDrugs').onclick = () => openDrugs(curTid);
 $('dRandom').onclick = () => startDrugs(drugScope, 'random');
 $('dAll').onclick = () => startDrugs(drugScope, 'all');
+$('dSeq').onclick = () => startDrugs(drugScope, 'seq');
 $('drugsBack').onclick = () => { if (drugScope === 'all') { renderHome(); show('home'); } else openTopic(drugScope); };
 
 // «10 наугад»: каждый раз новые вопросы, пока не пройдёт вся тема по кругу
@@ -536,6 +542,7 @@ function showReady(tid, title, sub, start, backTo) {
 $('readyGo').onclick = () => { if (readyStart) readyStart(); };
 $('readyBack').onclick = () => {
   if (readyBackTo === 'drugs') return openDrugs(run.scope || 'all');
+  if (readyBackTo === 'study' && block) { block.studyIdx = block.cards.length - 1; return showStudy(); }
   if (readyBackTo === 'unfinished') { renderUnfinished(); show('unfinished'); }
   else if (readyBackTo === 'home') { renderHome(); show('home'); }
   else openTopic(run.tid);
@@ -544,6 +551,7 @@ $('rdSpeak').onchange = e => { settings.speak = e.target.checked; saveSettings()
 function pauseToTopic() {
   abortListening(); hush();
   saveSession();
+  if (run.kind === 'drugs') return openDrugs(run.scope || 'all');
   openTopic(run.tid);
 }
 
@@ -588,17 +596,23 @@ function startBlockQuiz() {
   const lastRead = block.cards[block.cards.length - 1], q = block.quizLeft;
   if (q.length > 1 && q[0] === lastRead) { const j = 1 + Math.floor(Math.random() * (q.length - 1)); [q[0], q[j]] = [q[j], q[0]]; }
   session = { asked: 0, ok: 0, missed: new Map() };
-  show('quiz');
-  nextCard();
+  const n = block.quizLeft.length;
+  showReady(run.tid, curBlockLabel(), `Опрос: ${n} ${plural(n, 'вопрос', 'вопроса', 'вопросов')} по карточкам`, () => { show('quiz'); nextCard(); }, 'study');
 }
 $('sPrev').onclick = () => studyMove(-1);
 $('sNext').onclick = () => studyMove(1);
 $('sSkip').onclick = startBlockQuiz;
-$('sListen').onclick = () => {
-  const c = block.cards[block.studyIdx];
-  speak(c.q + '. ' + (c.t === 'list' || !c.a ? c.items.map(x => x.t).join(', ') : c.a));
-};
 $('studyBack').onclick = () => pauseToTopic();
+(() => {   // после ответа: свайп влево по вопросу — следующий
+  let x0 = null;
+  const card = document.querySelector('#quiz .card');
+  card.addEventListener('pointerdown', e => { x0 = e.clientX; });
+  card.addEventListener('pointerup', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0; x0 = null;
+    if (dx < -60 && finished && !$('after').hidden) $('next').click();
+  });
+})();
 (() => {   // листание карточек пальцем
   let x0 = null;
   const card = $('studyCard');
@@ -723,6 +737,7 @@ function nextCard() {
       if (firstNotDone(run.tid) < 0) seqDone = true;
     }
     // доведено до конца — незаконченное этого режима больше не нужно
+    if (run.kind === 'drugs' && drugMode === 'random' && !wasRetry) return startDrugs(run.scope, 'random', null, true);
     if (seqDone || (block && block.done) || (run.kind === 'errors' && wasRetry) || (run.kind === 'drugs' && !wasRetry) || (run.kind === 'rand' && !wasRetry)) dropSession(sessKey());
     return showResults();
   }
@@ -745,11 +760,13 @@ function showCard(card) {
   $('hints').hidden = true; $('hints').innerHTML = '';
   $('hintBtn').disabled = false; $('hintLabel').textContent = 'Подсказка';
   $('answerBox').hidden = false; $('after').hidden = true;
-  $('peekBtn').hidden = !hist().length; closePeek(); hideCheer();
+  $('peekBtn').hidden = !hist().length; closePeek(); hideCheer(); renderSpeakTog();
   saveSession();
   say(current.q);
 }
 $('repeat').onclick = () => { abortListening(); speak(current.q); };
+function renderSpeakTog() { $('speakTog').textContent = settings.speak ? '🔊 Вслух' : '🔇 Без звука'; }
+$('speakTog').onclick = () => { settings.speak = !settings.speak; saveSettings(); if (!settings.speak) hush(); renderSpeakTog(); };
 
 function updateScore() {
   let txt;
@@ -969,6 +986,8 @@ function finish(ok, missing = [], gaveUp = false) {
   renderChips(ok ? [] : missing);
   $('answerBox').hidden = true; $('after').hidden = false;
   $('accept').hidden = ok || gaveUp;
+  const lastOfDrug = run.kind === 'drugs' && drugMode === 'random' && !retryList && !(drugList || []).length;
+  $('next').textContent = lastOfDrug ? '🎲 Следующий препарат' : 'Дальше';
 
   if (ok) {
     const title = usedHint ? 'Верно, с подсказкой' : attempt === 1 ? 'Верно!' : 'Верно, со второй попытки';
