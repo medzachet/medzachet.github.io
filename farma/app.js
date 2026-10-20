@@ -7,7 +7,7 @@ function load(key, def) { try { return JSON.parse(localStorage.getItem(key)) ?? 
 function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 function drop(key) { try { localStorage.removeItem(key); } catch {} }
 
-const settings = Object.assign({ mode: 'train', voice: '', rate: 1, speak: true, theme: 'system', seqPos: {}, blocksDone: {}, randSeen: {} },
+const settings = Object.assign({ mode: 'train', voice: '', rate: 1, speak: true, marina: true, theme: 'system', seqPos: {}, blocksDone: {}, randSeen: {} },
   load('oz.settings', {}));
 const progress = load('oz.progress', {}); // cardId → { box, seen, ok }
 if (settings.blocksVer !== 4) {
@@ -215,6 +215,7 @@ function renderSettings() {
   document.querySelectorAll('[data-rate]').forEach(b => b.setAttribute('aria-checked', +b.dataset.rate === settings.rate));
   document.querySelectorAll('[data-theme-set]').forEach(b => b.setAttribute('aria-checked', b.dataset.themeSet === settings.theme));
   $('optSpeak').checked = settings.speak;
+  $('optMarina').checked = settings.marina;
   $('helpAndroid').hidden = IS_IOS; $('helpIos').hidden = !IS_IOS;
   renderVoices();
 }
@@ -234,6 +235,7 @@ document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { settin
 document.querySelectorAll('[data-rate]').forEach(b => b.onclick = () => { settings.rate = +b.dataset.rate; saveSettings(); renderSettings(); testVoice(); });
 document.querySelectorAll('[data-theme-set]').forEach(b => b.onclick = () => { settings.theme = b.dataset.themeSet; saveSettings(); applyTheme(); renderSettings(); });
 $('optSpeak').onchange = e => { settings.speak = e.target.checked; saveSettings(); };
+$('optMarina').onchange = e => { settings.marina = e.target.checked; saveSettings(); testVoice(); };
 
 // ── Озвучка: голоса — те, что установлены на телефоне ──
 let ruVoices = [], ruVoice = null;
@@ -268,30 +270,11 @@ if ('speechSynthesis' in window) {
 }
 $('voice').onchange = e => { settings.voice = e.target.value; saveSettings(); pickVoice(); testVoice(); };
 
-// Текст для голоса: без кавычек и скобок (иначе iPhone читает «quote»), греческие буквы — словами
-// Сокращения читаем по буквам (ЦНС → «цэ-эн-эс»), кроме тех, что говорят словом
-const LETTER = { А: 'а', Б: 'бэ', В: 'вэ', Г: 'гэ', Д: 'дэ', Е: 'е', Ё: 'ё', Ж: 'жэ', З: 'зэ', И: 'и', Й: 'й', К: 'ка', Л: 'эль', М: 'эм', Н: 'эн',
-  О: 'о', П: 'пэ', Р: 'эр', С: 'эс', Т: 'тэ', У: 'у', Ф: 'эф', Х: 'ха', Ц: 'цэ', Ч: 'че', Ш: 'ша', Щ: 'ща', Э: 'э', Ю: 'ю', Я: 'я' };
-const SAY_AS_WORD = new Set(['ЦОГ']);
-function spellAbbr(s) {
-  // без «просмотра назад» в регулярке — старый Safari на iPhone его не понимает
-  return s.replace(/(^|[^А-Яа-яЁё])([А-ЯЁ]{2,5})(?![а-яё])/g, (_, pre, m) =>
-    pre + (SAY_AS_WORD.has(m) ? m.toLowerCase() : [...m].map(ch => LETTER[ch] || ch).join('-')));
-}
-function forSpeech(s) {
-  return spellAbbr(s)
-    .replace(/мм\s*рт\.?\s*ст\.?/g, 'миллиметров ртутного столба')
-    .replace(/(\d+)\s*\/\s*(\d+)/g, '$1 на $2')
-    .replace(/[«»"“”„'`]/g, '')
-    .replace(/[()[\]]/g, ', ')
-    .replace(/(\d)\s*[–—-]\s*(\d)/g, '$1 до $2')
-    .replace(/\s+[—–]\s+/g, ', ')
-    .replace(/α/g, 'альфа ').replace(/β/g, 'бета ')
-    .replace(/%/g, ' процентов')
-    .replace(/^\d+\.\s*/, '')
-    .replace(/\s*,\s*([,.?!])/g, '$1').replace(/\s{2,}/g, ' ');
-}
-function speak(text) {
+// Записи голоса Марины (Яндекс): audio/<ключ>.mp3, список — window.AUDIO. Нет записи или не играет — голос телефона.
+// Один и тот же элемент <audio>: на iPhone после первого касания он может играть и дальше без нового касания.
+const player = new Audio();
+let playerDone = null;
+function speakSystem(text) {
   return new Promise(resolve => {
     if (!('speechSynthesis' in window)) return resolve();
     speechSynthesis.cancel();
@@ -301,8 +284,28 @@ function speak(text) {
     speechSynthesis.speak(u);
   });
 }
+function speak(text) {
+  hush();
+  const key = audioKey(text);
+  if (!settings.marina || !(window.AUDIO && window.AUDIO[key])) return speakSystem(text);
+  return new Promise(resolve => {
+    let over = false;
+    const done = ok => { if (over) return; over = true; playerDone = null; player.onended = player.onerror = null; ok ? resolve() : speakSystem(text).then(resolve); };
+    playerDone = () => { over = true; resolve(); };
+    player.onended = () => done(true);
+    player.onerror = () => done(false);
+    player.src = 'audio/' + key + '.mp3';
+    player.playbackRate = settings.rate;
+    const p = player.play();
+    if (p && p.catch) p.catch(() => done(false));
+  });
+}
 function say(text) { return settings.speak ? speak(text) : Promise.resolve(); }
-function hush() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+function hush() {
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  if (!player.paused) player.pause();
+  if (playerDone) { const f = playerDone; playerDone = null; f(); }
+}
 function testVoice() { speak('Что такое антибиотики? Назови определение.'); }
 $('voiceTest').onclick = testVoice;
 
