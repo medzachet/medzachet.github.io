@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=24">
+  <link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
   <div class="bg-dots" aria-hidden="true"></div>
@@ -114,7 +114,7 @@
       <div class="seg"><button data-theme-set="light">Светлая</button><button data-theme-set="dark">Тёмная</button><button data-theme-set="system">Авто</button></div>
     </section>
     <button class="text-btn small help-link" data-help>? Справочник</button>
-    <p class="ver">версия 24</p>
+    <p id="verLine" class="ver">версия 24</p>
     <p class="disclaimer">Учебный тренажёр по лекциям колледжа. Не медицинская рекомендация — не используй его для подбора лечения.</p>
   </main>
 
@@ -162,6 +162,17 @@
     <button id="sSkip" class="text-btn center">Сразу к опросу</button>
   </main>
 
+  <!-- Одна карточка (по ссылке #card=…) -->
+  <main id="cardv" class="screen" hidden>
+    <header class="row"><button id="cardvBack" class="text-btn">← Темы</button></header>
+    <article class="glass card study-card">
+      <div class="qmeta"><span id="cvTopic"></span><span id="cvId" class="tag"></span></div>
+      <p id="cvQ" class="qtext"></p>
+      <div id="cvA" class="study-ans"></div>
+      <button id="flagC" class="text-btn small flag flag-s">⚑ Замечание</button>
+    </article>
+  </main>
+
   <!-- Опрос -->
   <main id="quiz" class="screen" hidden>
     <header class="row">
@@ -206,6 +217,17 @@
   </main>
 
   <!-- Просмотр прошлых вопросов (без голоса и без перезачёта) -->
+  <!-- ⚑ Отметка ошибки -->
+  <div id="flagBox" class="peek" hidden>
+    <div class="glass peek-sheet">
+      <div class="row"><b>⚑ Ошибка в карточке</b><button id="flagClose" class="icon-btn sm" aria-label="Закрыть">✕</button></div>
+      <p id="flagQText" class="hint"></p>
+      <textarea id="flagText" class="glass" rows="3" maxlength="600" placeholder="Что не так? Можно не писать"></textarea>
+      <button id="flagSend" class="btn primary">Отправить</button>
+      <p id="flagErr" class="hint" hidden>Не получилось отправить. <a id="flagTg" href="#" target="_blank" rel="noopener">Отправить через Телеграм</a></p>
+    </div>
+  </div>
+
   <div id="peek" class="peek" hidden>
     <div class="glass peek-sheet">
       <div class="row"><span id="peekPos" class="label"></span><button id="peekClose" class="icon-btn sm" aria-label="Закрыть">✕</button></div>
@@ -246,24 +268,24 @@
     </div>
   </main>
 
-  <script src="bank/_core.js?v=24"></script>
-  <script src="bank/vocab.js?v=24"></script>
-  <script src="bank/farm_def.js?v=24"></script>
-  <script src="bank/farm_t01.js?v=24"></script>
-  <script src="bank/farm_t03.js?v=24"></script>
-  <script src="bank/farm_t04.js?v=24"></script>
-  <script src="bank/farm_t05.js?v=24"></script>
-  <script src="bank/farm_t06.js?v=24"></script>
-  <script src="bank/farm_t07.js?v=24"></script>
-  <script src="bank/farm_t08.js?v=24"></script>
-  <script src="bank/farm_t09.js?v=24"></script>
-  <script src="bank/farm_t10.js?v=24"></script>
-  <script src="bank/farm_t11.js?v=24"></script>
-  <script src="bank/farm_drugs.js?v=24"></script>
-  <script src="checker.js?v=24"></script>
-  <script src="cheers.js?v=24"></script>
-  <script src="speechtext.js?v=24"></script>
-  <script src="audio/index.js?v=24"></script>
-  <script src="app.js?v=24"></script>
+  <script src="bank/_core.js?v=25"></script>
+  <script src="bank/vocab.js?v=25"></script>
+  <script src="bank/farm_def.js?v=25"></script>
+  <script src="bank/farm_t01.js?v=25"></script>
+  <script src="bank/farm_t03.js?v=25"></script>
+  <script src="bank/farm_t04.js?v=25"></script>
+  <script src="bank/farm_t05.js?v=25"></script>
+  <script src="bank/farm_t06.js?v=25"></script>
+  <script src="bank/farm_t07.js?v=25"></script>
+  <script src="bank/farm_t08.js?v=25"></script>
+  <script src="bank/farm_t09.js?v=25"></script>
+  <script src="bank/farm_t10.js?v=25"></script>
+  <script src="bank/farm_t11.js?v=25"></script>
+  <script src="bank/farm_drugs.js?v=25"></script>
+  <script src="checker.js?v=25"></script>
+  <script src="cheers.js?v=25"></script>
+  <script src="speechtext.js?v=25"></script>
+  <script src="audio/index.js?v=25"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>

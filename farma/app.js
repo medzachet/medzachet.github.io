@@ -81,7 +81,7 @@ function show(screen) {
   if ((screen === 'settings' || screen === 'help') && screenNow !== 'settings' && screenNow !== 'help') screenBefore = screenNow;
   screenNow = screen;
   rememberScreen(screen);
-  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
+  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
   window.scrollTo(0, 0);
   if (screen !== 'home' && !hasGuard) { history.pushState({ oz: 1 }, ''); hasGuard = true; }
 }
@@ -101,6 +101,7 @@ function goBack() {
   switch (screenNow) {
     case 'settings': return $('setBack').click();
     case 'help': return $('helpBack').click();
+    case 'cardv': return $('cardvBack').click();
     case 'topic': case 'unfinished': renderHome(); return show('home');
     case 'ready': return $('readyBack').click();
     case 'study': return pauseToTopic();
@@ -772,14 +773,65 @@ function showCard(card) {
 $('repeat').onclick = () => { abortListening(); speak(current.q); };
 // ⚑ Замечание: бот @medzachetbot сразу знает, о какой карточке речь
 const BOT = 'medzachetbot';
+const FLAG_URL = 'https://zachet-pravki.osanka-telo.workers.dev/flag';
+const tgLink = c => `https://t.me/${BOT}?start=c_${c.id}`;
+let flagging = null;
+// управляющая — сразу в бот (с комментариями и правками); остальные — короткая отметка без Телеграма
 function flagCard(c) {
   if (!c) return;
   abortListening(); hush();
-  saveSession();
-  window.open(`https://t.me/${BOT}?start=c_${c.id}`, '_blank');
+  if (screenNow === 'quiz' || screenNow === 'study') saveSession();
+  if (settings.admin) return window.open(tgLink(c), '_blank');
+  flagging = c;
+  $('flagQText').textContent = c.q;
+  $('flagText').value = ''; $('flagErr').hidden = true;
+  $('flagSend').disabled = false; $('flagSend').textContent = 'Отправить';
+  $('flagTg').href = tgLink(c);
+  $('flagBox').hidden = false;
 }
+$('flagClose').onclick = () => { $('flagBox').hidden = true; };
+$('flagSend').onclick = async () => {
+  const c = flagging; if (!c) return;
+  $('flagSend').disabled = true; $('flagSend').textContent = 'Отправляю…';
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 9000);
+    const r = await fetch(FLAG_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, signal: ctl.signal,
+      body: JSON.stringify({ card: c.id, q: c.q, text: $('flagText').value.trim() }) });
+    if (!r.ok) throw new Error(r.status);
+    $('flagBox').hidden = true; toast('Спасибо! Отметка отправлена');
+  } catch (e) {
+    $('flagSend').disabled = false; $('flagSend').textContent = 'Попробовать ещё раз'; $('flagErr').hidden = false;
+  }
+};
 $('flagQ').onclick = () => flagCard(current);
 $('flagS').onclick = () => flagCard(block && block.cards[block.studyIdx]);
+$('flagC').onclick = () => flagCard(CARD[cardvId]);
+
+// Режим управляющей: 5 касаний по строке версии в настройках → ключ
+let verTaps = 0, verTimer = null;
+$('verLine').onclick = () => {
+  verTaps++; clearTimeout(verTimer); verTimer = setTimeout(() => { verTaps = 0; }, 1500);
+  if (verTaps < 5) return;
+  verTaps = 0;
+  if (settings.admin) { if (confirm('Выключить режим управляющей на этом телефоне?')) { settings.admin = false; saveSettings(); toast('Режим управляющей выключен'); } return; }
+  const k = (prompt('Ключ управляющей') || '').trim().toLowerCase();
+  if (k && audioKey(k) === '682sr7') { settings.admin = true; saveSettings(); toast('Режим управляющей включён: ⚑ ведёт в бот'); }
+  else if (k) toast('Неверный ключ');
+};
+
+// Одна карточка по ссылке из уведомления: …/farma/#card=t06-07
+let cardvId = null;
+function openCardView(id) {
+  const c = CARD[id]; if (!c) return false;
+  cardvId = id;
+  $('cvTopic').textContent = (c.drug ? shortName(TOPIC[c.tid]) : c.topic) + (c.s ? ' · ' + c.s : '');
+  $('cvId').textContent = id;
+  $('cvQ').textContent = c.q;
+  $('cvA').innerHTML = c.t === 'list' || !c.a ? `<ul>${c.items.map(x => `<li>${esc(x.t)}</li>`).join('')}</ul>` : markKeys(c);
+  show('cardv');
+  return true;
+}
+$('cardvBack').onclick = () => { history.replaceState(null, '', location.pathname); renderHome(); show('home'); };
 function renderSpeakTog() { $('speakTog').textContent = settings.speak ? '🔊 Вслух' : '🔇 Без звука'; }
 $('speakTog').onclick = () => { settings.speak = !settings.speak; saveSettings(); if (!settings.speak) hush(); renderSpeakTog(); };
 
@@ -1148,5 +1200,5 @@ function restoreScreen() {
 applyTheme();
 updateMic();
 renderHome();
-restoreScreen();
+if (!(location.hash.startsWith('#card=') && openCardView(decodeURIComponent(location.hash.slice(6))))) restoreScreen();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
