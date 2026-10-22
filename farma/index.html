@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=25">
+  <link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
   <div class="bg-dots" aria-hidden="true"></div>
@@ -49,6 +49,7 @@
       <button id="tErr" class="act">Ошибки</button>
       <button id="tRand" class="act half">🎲 10 наугад</button>
       <button id="tDrugs" class="act half">💊 Препараты</button>
+      <button id="tSheets" class="act wide" hidden>🖼 Шпаргалки</button>
     </div>
     <div class="label">Разделы</div>
     <div id="tSections" class="glass list"></div>
@@ -147,6 +148,7 @@
     <header class="row">
       <button id="studyBack" class="text-btn" aria-label="Назад: сохранить и выйти">← Назад</button>
       <span id="studyScore" class="label"></span>
+      <button id="studySheet" class="text-btn" hidden>🖼 Шпаргалка</button>
     </header>
     <article id="studyCard" class="glass card study-card">
       <div class="qmeta"><span id="sTopic"></span><span id="sKind" class="tag"></span></div>
@@ -160,6 +162,18 @@
       <button id="sNext" class="btn primary">Дальше</button>
     </div>
     <button id="sSkip" class="text-btn center">Сразу к опросу</button>
+  </main>
+
+  <!-- Шпаргалка (картинка) -->
+  <main id="sheet" class="screen" hidden>
+    <header class="row"><button id="shBack" class="text-btn">← Назад</button><span id="shPos" class="label"></span></header>
+    <h2 id="shTitle"></h2>
+    <div id="shWrap" class="sheet-wrap glass"><img id="shImg" alt=""></div>
+    <p class="hint center">Нажми на картинку, чтобы увеличить</p>
+    <div class="study-nav">
+      <button id="shPrev" class="btn" aria-label="Предыдущая">←</button>
+      <button id="shNext" class="btn primary">Дальше</button>
+    </div>
   </main>
 
   <!-- Одна карточка (по ссылке #card=…) -->
@@ -268,24 +282,25 @@
     </div>
   </main>
 
-  <script src="bank/_core.js?v=25"></script>
-  <script src="bank/vocab.js?v=25"></script>
-  <script src="bank/farm_def.js?v=25"></script>
-  <script src="bank/farm_t01.js?v=25"></script>
-  <script src="bank/farm_t03.js?v=25"></script>
-  <script src="bank/farm_t04.js?v=25"></script>
-  <script src="bank/farm_t05.js?v=25"></script>
-  <script src="bank/farm_t06.js?v=25"></script>
-  <script src="bank/farm_t07.js?v=25"></script>
-  <script src="bank/farm_t08.js?v=25"></script>
-  <script src="bank/farm_t09.js?v=25"></script>
-  <script src="bank/farm_t10.js?v=25"></script>
-  <script src="bank/farm_t11.js?v=25"></script>
-  <script src="bank/farm_drugs.js?v=25"></script>
-  <script src="checker.js?v=25"></script>
-  <script src="cheers.js?v=25"></script>
-  <script src="speechtext.js?v=25"></script>
-  <script src="audio/index.js?v=25"></script>
-  <script src="app.js?v=25"></script>
+  <script src="bank/_core.js?v=26"></script>
+  <script src="bank/vocab.js?v=26"></script>
+  <script src="bank/farm_def.js?v=26"></script>
+  <script src="bank/farm_t01.js?v=26"></script>
+  <script src="bank/farm_t03.js?v=26"></script>
+  <script src="bank/farm_t04.js?v=26"></script>
+  <script src="bank/farm_t05.js?v=26"></script>
+  <script src="bank/farm_t06.js?v=26"></script>
+  <script src="bank/farm_t07.js?v=26"></script>
+  <script src="bank/farm_t08.js?v=26"></script>
+  <script src="bank/farm_t09.js?v=26"></script>
+  <script src="bank/farm_t10.js?v=26"></script>
+  <script src="bank/farm_t11.js?v=26"></script>
+  <script src="bank/farm_drugs.js?v=26"></script>
+  <script src="checker.js?v=26"></script>
+  <script src="cheers.js?v=26"></script>
+  <script src="sheets/index.js"></script>
+  <script src="speechtext.js?v=26"></script>
+  <script src="audio/index.js?v=26"></script>
+  <script src="app.js?v=26"></script>
 </body>
 </html>

@@ -10,8 +10,19 @@
     return s.replace(/(^|[^А-Яа-яЁё])([А-ЯЁ]{2,5})(?![а-яё])/g, (_, pre, m) =>
       pre + (SAY_AS_WORD.has(m) ? m.toLowerCase() : [...m].map(ch => LETTER[ch] || ch).join('-')));
   }
+  // Римские цифры: «II группы» → «второй группы», «ангиотензин II» → «ангиотензин два» (Марина читала «ай-ай»)
+  const ORD = { I: ['перв', 'ая', 'ой', 'ую'], II: ['втор', 'ая', 'ой', 'ую'], III: ['трет', 'ья', 'ьей', 'ью'], IV: ['четвёрт', 'ая', 'ой', 'ую'] };
+  const CARD = { I: 'один', II: 'два', III: 'три', IV: 'четыре' };
+  function romans(s) {
+    return s
+      .replace(/(^|[^A-Za-z])(IV|I{1,3})\s+(групп)([а-яё]*)/g, (_, pre, r, g, end) => {
+        const o = ORD[r], form = end === 'а' ? 1 : end === 'у' ? 3 : 2;
+        return pre + o[0] + o[form] + ' ' + g + end;
+      })
+      .replace(/(^|[^A-Za-z])(IV|I{1,3})(?![A-Za-z])/g, (_, pre, r) => pre + CARD[r]);
+  }
   function forSpeech(s) {
-    return spellAbbr(s)
+    return spellAbbr(romans(s))
       .replace(/мм\s*рт\.?\s*ст\.?/g, 'миллиметров ртутного столба')
       .replace(/(\d+)\s*\/\s*(\d+)/g, '$1 на $2')
       .replace(/[«»"“”„'`]/g, '')

@@ -314,3 +314,8 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .speak-tog { margin-left: auto; }
 .flag { opacity: .7; }
 .flag-s { align-self: flex-end; margin-top: 4px; }
+.sheet-wrap { padding: 6px; border-radius: 18px; overflow: auto; -webkit-overflow-scrolling: touch; }
+.sheet-wrap img { display: block; width: 100%; height: auto; border-radius: 12px; }
+.sheet-wrap.zoom { max-height: 78vh; }
+.sheet-wrap.zoom img { width: 230%; max-width: none; }
+.hint.center { text-align: center; }

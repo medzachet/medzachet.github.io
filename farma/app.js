@@ -81,7 +81,7 @@ function show(screen) {
   if ((screen === 'settings' || screen === 'help') && screenNow !== 'settings' && screenNow !== 'help') screenBefore = screenNow;
   screenNow = screen;
   rememberScreen(screen);
-  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
+  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'sheet', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
   window.scrollTo(0, 0);
   if (screen !== 'home' && !hasGuard) { history.pushState({ oz: 1 }, ''); hasGuard = true; }
 }
@@ -102,6 +102,7 @@ function goBack() {
     case 'settings': return $('setBack').click();
     case 'help': return $('helpBack').click();
     case 'cardv': return $('cardvBack').click();
+    case 'sheet': return $('shBack').click();
     case 'topic': case 'unfinished': renderHome(); return show('home');
     case 'ready': return $('readyBack').click();
     case 'study': return pauseToTopic();
@@ -185,12 +186,13 @@ function renderTopic() {
     row.className = 'sec' + (done ? ' done' : '') + (now ? ' now' : '');
     row.innerHTML = `<span class="num">${done ? '✓' : k + 1}</span><span class="sname"></span><small>${s.count}</small>`;
     row.querySelector('.sname').textContent = s.name;
-    row.onclick = () => { const i = s.idx.find(x => !d.has(x)); startBlock(curTid, i ?? s.idx[0]); };
+    row.onclick = () => { const i = s.idx.find(x => !d.has(x)); openBlock(curTid, i ?? s.idx[0]); };
     list.append(row);
   });
   const box = $('tResumes'); box.innerHTML = '';
   for (const s of allSessions().filter(x => x.tid === curTid || (x.kind === 'drugs' && x.scope === curTid))) box.append(resumeRow(s, 'topic', false));
   $('tDrugs').hidden = !drugNames(curTid).length;
+  const shs = sheetsOf(curTid); $('tSheets').hidden = !shs.length; $('tSheets').textContent = `🖼 Шпаргалки · ${shs.length}`;
   $('tRand').classList.toggle('wide', $('tDrugs').hidden);
   const pend = $('tPending');
   pend.hidden = !(t.pending && t.pending.length);
@@ -203,7 +205,7 @@ $('topicBack').onclick = () => { renderHome(); show('home'); };
 $('tCards').onclick = () => {
   let i = firstNotDone(curTid);
   if (i < 0) { settings.blocksDone[curTid] = []; saveSettings(); i = 0; }
-  startBlock(curTid, i);
+  openBlock(curTid, i);
 };
 $('tMix').onclick = () => startRun(curTid, 'mix');
 $('tRand').onclick = () => startRun(curTid, 'rand');
@@ -563,6 +565,48 @@ function pauseToTopic() {
 
 // ── Карточки блока ──
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// ── Шпаргалки ──
+const sheetsOf = tid => (window.SHEETS && window.SHEETS[tid]) || [];
+const sheetFor = (tid, sec) => sheetsOf(tid).find(sh => sh.secs.includes(sec));
+let sheetList = [], sheetIdx = 0, sheetDone = null, sheetBack = null;
+function openSheets(list, idx, done, back) {
+  sheetList = list; sheetIdx = idx; sheetDone = done; sheetBack = back;
+  abortListening(); hush();
+  showSheet();
+}
+function showSheet() {
+  const sh = sheetList[sheetIdx];
+  $('shTitle').textContent = sh.title;
+  $('shPos').textContent = sheetList.length > 1 ? `${sheetIdx + 1} / ${sheetList.length}` : '';
+  $('shImg').src = sh.f; $('shImg').alt = sh.title;
+  $('shWrap').classList.remove('zoom');
+  $('shPrev').disabled = sheetIdx === 0;
+  const last = sheetIdx === sheetList.length - 1;
+  $('shNext').textContent = last ? (sheetDone ? 'К карточкам ▶' : 'Готово') : 'Дальше →';
+  show('sheet');
+}
+$('shImg').onclick = () => $('shWrap').classList.toggle('zoom');
+$('shPrev').onclick = () => { if (sheetIdx > 0) { sheetIdx--; showSheet(); } };
+$('shNext').onclick = () => {
+  if (sheetIdx < sheetList.length - 1) { sheetIdx++; return showSheet(); }
+  if (sheetDone) return sheetDone();
+  sheetBack();
+};
+$('shBack').onclick = () => sheetBack();
+$('tSheets').onclick = () => openSheets(sheetsOf(curTid), 0, null, () => openTopic(curTid));
+// Карточки раздела: если с этого раздела начинается шпаргалка — сначала она
+function openBlock(tid, idx) {
+  const b = topicBlocks(tid)[idx];
+  const list = sheetsOf(tid).filter(sh => b.names.includes(sh.secs[0]));
+  if (!list.length) return startBlock(tid, idx);
+  openSheets(list, 0, () => startBlock(tid, idx), () => openTopic(tid));
+}
+$('studySheet').onclick = () => {
+  const sh = block && sheetFor(run.tid, block.cards[block.studyIdx].s);
+  if (!sh) return;
+  saveSession();
+  openSheets([sh], 0, null, () => showStudy());
+};
 function startBlock(tid, idx) {
   dropSession(`${tid}:block`);
   resetRun(tid, 'block');
@@ -576,6 +620,7 @@ function showStudy() {
   block.phase = 'study';
   const i = block.studyIdx, c = block.cards[i];
   $('studyScore').textContent = `${i + 1} / ${block.cards.length}`;
+  $('studySheet').hidden = !sheetFor(run.tid, c.s);
   $('sTopic').textContent = curBlockLabel();
   $('sKind').textContent = c.strict ? 'строго' : KIND[c.t];
   $('sKind').classList.toggle('strict', !!c.strict);
@@ -764,7 +809,8 @@ function showCard(card) {
   $('chips').innerHTML = '';
   $('feedback').hidden = true;
   $('hints').hidden = true; $('hints').innerHTML = '';
-  $('hintBtn').disabled = false; $('hintLabel').textContent = 'Подсказка';
+  const hasHint = !!((current.hs && current.hs.length) || current.h);
+  $('hintBtn').disabled = !hasHint; $('hintLabel').textContent = hasHint ? 'Подсказка' : 'Нет подсказки';
   $('answerBox').hidden = false; $('after').hidden = true;
   $('peekBtn').hidden = !hist().length; closePeek(); hideCheer(); renderSpeakTog();
   saveSession();
@@ -878,34 +924,20 @@ function refBlock() { return current.a ? `<div class="ref"><b>По лекции<
 // ── Подсказки: переформулировка → начало ответа / первые буквы → по одному пункту ──
 function firstWord(s) { return (s.match(/[A-Za-zА-Яа-яЁё0-9-]{2,}/) || [s])[0]; }
 function stub(s, n) { const w = firstWord(s); return w.length <= n ? w : w.slice(0, n) + '…'; }
-// Подсказки не раскрывают ответ: 1) первые буквы, 2) начало слов, 3) кусок другого слова из пункта, 4) наводящий вопрос
-const HINT_SKIP = new Set(['и', 'в', 'во', 'на', 'при', 'с', 'со', 'по', 'для', 'не', 'от', 'до', 'из', 'к', 'или', 'а', 'то', 'что', 'как', 'же', 'это', 'том', 'числе']);
-const hintWords = m => (m.match(/[A-Za-zА-Яа-яЁё0-9-]+/g) || []).filter(w => w.length > 2 && !HINT_SKIP.has(w.toLowerCase()));
-const cut = (w, n) => (w.length <= n + 1 ? w.slice(0, Math.max(1, w.length - 2)) : w.slice(0, n)) + '…';
+// Подсказки — только те, что написала Оля (hs, по шагам). В непроверенных темах — старый наводящий вопрос h,
+// если в нём нет слов самого ответа. Подсказок по буквам нет (решение Оли 22.10).
 function hintList() {
+  if (current.hs && current.hs.length) return current.hs.map((v, i) => [current.hs.length > 1 ? `Подсказка ${i + 1}` : 'Подсказка', v]);
+  const h = (current.h || '').toLowerCase().replace(/ё/g, 'е');
+  if (!h) return [];
   const st = Checker.status(current, found, modeFor(current));
   const miss = st.missing.map(i => current.items[i]);
-  const out = [];
-  // наводящий вопрос автора — только если в нём нет самих ключевых слов ответа
-  const h = (current.h || '').toLowerCase().replace(/ё/g, 'е');
-  const words = miss.map(it => hintWords(it.t));
-  const n = miss.length;
-  const lead = n > 1 ? `${n} ${plural(n, 'пункт', 'пункта', 'пунктов')}. ` : '';
-  out.push(['Первые буквы', lead + words.map(ws => (ws[0] || '?')[0].toUpperCase() + '…').join(', ')]);
-  out.push(['Начало', words.map(ws => ws[0] ? cut(ws[0], 4) : '?').join(', ')]);
-  // третья ступень — половина другого слова из пункта (для фраз)
-  const more = words.map(ws => {
-    if (ws.length < 2) return null;
-    const w = ws[1 + (audioKey(ws.join(' ')).length + ws.length) % (ws.length - 1)];
-    return cut(w, Math.ceil(w.length / 2));
-  }).filter(Boolean);
-  if (more.length) out.push(['Ещё слово', more.join(', ')]);
-  if (h && !miss.some(it => it.k.some(k => k.length > 3 && h.includes(k.split(' ')[0])))) out.push(['Наводка', current.h]);
-  return out;
+  return miss.some(it => it.k.some(k => k.length > 3 && h.includes(k.split(' ')[0]))) ? [] : [['Подсказка', current.h]];
 }
 $('hintBtn').onclick = () => {
   if (finished) return;
   const list = hintList();
+  if (!list.length) { $('hintBtn').disabled = true; $('hintLabel').textContent = 'Нет подсказки'; return; }
   hintLevel = Math.min(hintLevel + 1, list.length);
   usedHint = true;
   const box = $('hints'); box.hidden = false;
@@ -1137,7 +1169,7 @@ $('resume').onclick = () => {
   if (block && block.done) {
     let next = firstNotDone(run.tid, block.idx + 1);
     if (next < 0) { settings.blocksDone[run.tid] = []; saveSettings(); next = 0; }
-    return startBlock(run.tid, next);
+    return openBlock(run.tid, next);
   }
   if (seqDone && run.kind === 'seq') { settings.seqPos[run.tid] = 0; saveSettings(); return startRun(run.tid, 'seq'); }
   if (run.kind === 'errors') return openTopic(run.tid);
@@ -1170,6 +1202,7 @@ function rememberScreen(screen) {
   if (screen === 'topic') last.tid = curTid;
   else if (screen === 'drugsScr') last.scope = drugScope;
   else if (screen === 'quiz' || screen === 'study') last.key = sessKey();
+  else if (screen === 'sheet') last = { screen: 'topic', tid: curTid };
   else if (screen === 'results' || screen === 'ready') last = run.kind === 'drugs' ? { screen: 'drugsScr', scope: run.scope || 'all' } : { screen: 'topic', tid: run.tid };
   else if (screen === 'settings' || screen === 'help') last = { screen, back: screenBefore, tid: curTid };
   save('oz.last', last);

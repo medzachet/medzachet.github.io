@@ -1,6 +1,6 @@
 // Офлайн: сначала сеть (чтобы новые карточки подтягивались), при её отсутствии — кэш.
 // cache: 'no-cache' — всегда сверяться с сервером, иначе браузер до 10 минут отдаёт старую копию (GitHub Pages: max-age=600).
-const CACHE = 'oz-v25';
+const CACHE = 'oz-v26';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
