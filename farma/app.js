@@ -576,7 +576,14 @@ function pauseToTopic() {
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 // ── Справочник препаратов (данные — spravochnik.js, грузится при первом открытии) ──
 let spMode = load('oz.spmode', 'abc'), spOrder = [], spCur = 0, spScroll = 0;
-const spOpen = new Set();   // раскрытые темы в режиме «По темам»
+// Раскрытые буквы / темы. В алфавите сначала всё открыто, в темах — закрыто. «По одной» — открываешь одну, остальные закрываются.
+const spOpen = { abc: null, topic: new Set() };
+let spOne = load('oz.spone', false);
+function spToggle(key) {
+  const set = spOpen[spMode];
+  if (set.has(key)) set.delete(key); else { if (spOne) set.clear(); set.add(key); }
+  renderSprav();
+}
 function loadSprav(then) {
   if (window.SPRAV) return then();
   const sc = document.createElement('script');
@@ -602,40 +609,43 @@ function spItem(i) {
   return b;
 }
 const spGrid = () => { const g = document.createElement('div'); g.className = 'sp-grid'; return g; };
+function spHead(key, num, name, count, open) {
+  const h = document.createElement('button');
+  h.className = 'sp-topic' + (spMode === 'abc' ? ' sp-abc' : ''); h.setAttribute('aria-expanded', open);
+  h.innerHTML = '<b></b><span></span><small></small>';
+  h.children[0].textContent = num; h.children[1].textContent = name; h.children[2].textContent = count;
+  h.onclick = () => spToggle(key);
+  return h;
+}
 function renderSprav() {
   const S = window.SPRAV, box = $('spList'); box.innerHTML = '';
   document.querySelectorAll('[data-spmode]').forEach(b => b.setAttribute('aria-checked', b.dataset.spmode === spMode));
+  $('spOne').setAttribute('aria-checked', spOne);
+  // поиск по началу слова: «ин» → «индапамид», «кромогликат натрия (Интал)», но не «клиндамицин»
   const q = spNorm($('spSearch').value.trim());
-  const ok = i => !q || spNorm(S.drugs[i].n).includes(q) || spNorm(S.groups[S.drugs[i].g].name).includes(q);
+  const ok = i => !q || spNorm(S.drugs[i].n).split(/[^a-zа-я0-9%]+/).some(w => w.startsWith(q));
+  const groups = [], byKey = {};   // [{key, num, name, items}]
+  const add = (key, num, name, i) => { if (!byKey[key]) groups.push(byKey[key] = { key, num, name, items: [] }); byKey[key].items.push(i); };
   const all = S.drugs.map((_, i) => i);
   if (spMode === 'abc') {
     spOrder = all.filter(ok).sort((a, b) => S.drugs[a].n.localeCompare(S.drugs[b].n, 'ru', { sensitivity: 'base' }));
-    let letter = '', grid;
-    for (const i of spOrder) {
-      const L = S.drugs[i].n[0].toUpperCase();
-      if (L !== letter) { letter = L; const h = document.createElement('div'); h.className = 'sp-letter'; h.textContent = L; grid = spGrid(); box.append(h, grid); }
-      grid.append(spItem(i));
-    }
+    for (const i of spOrder) { const L = S.drugs[i].n[0].toUpperCase(); add(L, L, '', i); }
+    if (!spOpen.abc) spOpen.abc = new Set(spOne ? [] : groups.map(g => g.key));
   } else {
-    // темы — раскрывающиеся списки; при поиске раскрыты все найденные
     spOrder = all.filter(ok);
-    const byTid = {};
-    for (const i of spOrder) (byTid[S.groups[S.drugs[i].g].tid] = byTid[S.groups[S.drugs[i].g].tid] || []).push(i);
-    for (const tid of Object.keys(byTid)) {
-      const open = !!q || spOpen.has(tid);
-      const h = document.createElement('button');
-      h.className = 'sp-topic'; h.setAttribute('aria-expanded', open);
-      h.innerHTML = '<b></b><span></span><small></small>';
-      h.children[0].textContent = tid.slice(1);
-      h.children[1].textContent = S.topics[tid];
-      h.children[2].textContent = byTid[tid].length;
-      h.onclick = () => { spOpen.has(tid) ? spOpen.delete(tid) : spOpen.add(tid); renderSprav(); };
-      box.append(h);
-      if (open) { const grid = spGrid(); byTid[tid].forEach(i => grid.append(spItem(i))); box.append(grid); }
-    }
+    for (const i of spOrder) { const tid = S.groups[S.drugs[i].g].tid; add(tid, tid.slice(1), S.topics[tid], i); }
+  }
+  const set = spOpen[spMode];
+  for (const g of groups) {
+    const open = !!q || set.has(g.key);   // при поиске раскрыто всё найденное
+    box.append(spHead(g.key, g.num, g.name, g.items.length, open));
+    if (open) { const grid = spGrid(); g.items.forEach(i => grid.append(spItem(i))); box.append(grid); }
   }
   if (!spOrder.length) { const p = document.createElement('p'); p.className = 'sp-none'; p.textContent = 'Ничего не нашлось'; box.append(p); }
 }
+$('spAllOpen').onclick = () => { spOpen[spMode] = new Set(spMode === 'abc' ? window.SPRAV.drugs.map(d => d.n[0].toUpperCase()) : Object.keys(window.SPRAV.topics)); spOne = false; save('oz.spone', spOne); renderSprav(); };
+$('spAllClose').onclick = () => { spOpen[spMode] = new Set(); renderSprav(); };
+$('spOne').onclick = () => { spOne = !spOne; save('oz.spone', spOne); if (spOne) spOpen[spMode] = new Set(); renderSprav(); };
 document.querySelectorAll('[data-spmode]').forEach(b => b.onclick = () => { spMode = b.dataset.spmode; save('oz.spmode', spMode); spScroll = 0; renderSprav(); });
 $('spSearch').oninput = () => renderSprav();
 $('spBack').onclick = () => { spScroll = 0; renderHome(); show('home'); };
@@ -652,7 +662,7 @@ function openDrug(i) {
   const sec = (title, html) => html ? `<section class="sp-sec"><h3>${title}</h3>${html}</section>` : (empty.push(title.toLowerCase()), '');
   const same = S.drugs.map((x, k) => [x, k]).filter(([x, k]) => x.g === d.g && k !== i);
   const lvl = (x, k, cls) => { const [n, note] = x.split(' — '); return `<li class="${cls}" style="--lv:${k}">${esc(n)}${note ? `<small>${esc(note)}</small>` : ''}</li>`; };
-  const tree = '<ol class="sp-tree">' + g.path.map((x, k) => lvl(x, k, k === g.path.length - 1 ? 'grp' : '')).join('') + lvl(d.n, g.path.length, 'me') + '</ol>';
+  const tree = '<ol class="sp-tree">' + g.path.map((x, k) => lvl(x, k, k === g.path.length - 1 ? 'grp' : '')).join('') + '</ol>';
   $('drBody').innerHTML =
     sec('Классификация', tree + (g.about ? `<p class="sp-about">${esc(g.about)}</p>` : '')) +
     sec('Показания', spUl(g.ind)) +
