@@ -319,3 +319,28 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .sheet-wrap.zoom { max-height: 78vh; }
 .sheet-wrap.zoom img { width: 230%; max-width: none; }
 .hint.center { text-align: center; }
+
+/* ── Справочник препаратов ── */
+.sp-search { width: 100%; font: inherit; color: var(--ink); padding: 11px 14px; border-radius: 14px; }
+.sp-search:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow); }
+.sp-list { display: flex; flex-direction: column; gap: 2px; }
+.sp-letter, .sp-topic { margin: 14px 2px 4px; font: 700 13px Unbounded, Manrope, sans-serif; color: var(--c1); letter-spacing: .04em; }
+.sp-topic { font-size: 14px; color: var(--ink); }
+.sp-group { margin: 8px 2px 2px; font-size: 12.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.sp-item { appearance: none; width: 100%; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  padding: 11px 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); color: var(--ink); font: inherit; font-weight: 600; }
+.sp-item small { color: var(--muted); font-weight: 500; font-size: 12px; text-align: right; }
+.sp-item:active { transform: scale(.99); }
+.sp-path { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-path span { font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); color: var(--muted); }
+.sp-body { display: flex; flex-direction: column; gap: 10px; }
+.sp-sec { padding: 14px 16px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
+.sp-sec h3 { margin: 0 0 8px; font: 700 15px Unbounded, Manrope, sans-serif; color: var(--c1); }
+.sp-sec .sp-q { font-size: 12.5px; font-weight: 700; color: var(--muted); margin: 8px 0 2px; }
+.sp-sec .sp-q:first-of-type { margin-top: 0; }
+.sp-sec ul { margin: 2px 0 0; padding-left: 20px; }
+.sp-sec p { margin: 2px 0 0; }
+.sp-none { color: var(--muted); font-style: italic; }
+.sp-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-links button { appearance: none; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600; padding: 7px 12px; border-radius: 999px;
+  background: var(--card2); border: 1px solid var(--c2); color: var(--ink); }

@@ -81,7 +81,7 @@ function show(screen) {
   if ((screen === 'settings' || screen === 'help') && screenNow !== 'settings' && screenNow !== 'help') screenBefore = screenNow;
   screenNow = screen;
   rememberScreen(screen);
-  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'sheet', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
+  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'sheet', 'sprav', 'drug', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
   window.scrollTo(0, 0);
   if (screen !== 'home' && !hasGuard) { history.pushState({ oz: 1 }, ''); hasGuard = true; }
 }
@@ -103,6 +103,8 @@ function goBack() {
     case 'help': return $('helpBack').click();
     case 'cardv': return $('cardvBack').click();
     case 'sheet': return $('shBack').click();
+    case 'sprav': return $('spBack').click();
+    case 'drug': return $('drBack').click();
     case 'topic': case 'unfinished': renderHome(); return show('home');
     case 'ready': return $('readyBack').click();
     case 'study': return pauseToTopic();
@@ -149,6 +151,11 @@ function renderHome() {
     b.innerHTML = `<span class="num">💊</span><span class="tbody"><span class="tname">Препараты · все темы</span></span><span class="cnt">${drugNames('all').length}</span>`;
     b.onclick = () => openDrugs('all');
     box.append(b);
+    const sp = document.createElement('button');
+    sp.className = 'glass topic drugs-entry';
+    sp.innerHTML = `<span class="num">📚</span><span class="tbody"><span class="tname">Справочник препаратов</span></span><span class="cnt">›</span>`;
+    sp.onclick = () => openSprav();
+    box.append(sp);
   }
   renderResume();
   $('noSpeech').hidden = !!Recognition;
@@ -565,6 +572,98 @@ function pauseToTopic() {
 
 // ── Карточки блока ──
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// ── Справочник препаратов (данные — spravochnik.js, грузится при первом открытии) ──
+let spMode = load('oz.spmode', 'abc'), spOrder = [], spCur = 0, spScroll = 0;
+function loadSprav(then) {
+  if (window.SPRAV) return then();
+  const sc = document.createElement('script');
+  sc.src = 'spravochnik.js?v=' + (document.getElementById('verLine').textContent.replace(/\D/g, '') || '0');
+  sc.onload = then; sc.onerror = () => toast('Не удалось загрузить справочник');
+  document.head.append(sc);
+}
+const spNorm = s => s.toLowerCase().replace(/ё/g, 'е');
+function openSprav(after) {
+  loadSprav(() => {
+    $('spCount').textContent = `${window.SPRAV.drugs.length} препаратов`;
+    renderSprav();
+    show('sprav');
+    window.scrollTo(0, spScroll);
+    if (after) after();
+  });
+}
+function spItem(i, sub) {
+  const d = window.SPRAV.drugs[i];
+  const b = document.createElement('button');
+  b.className = 'sp-item';
+  b.innerHTML = '<span></span><small></small>';
+  b.firstChild.textContent = d.n;
+  b.lastChild.textContent = sub;
+  b.onclick = () => { spScroll = window.scrollY; openDrug(i); };
+  return b;
+}
+function renderSprav() {
+  const S = window.SPRAV, box = $('spList'); box.innerHTML = '';
+  document.querySelectorAll('[data-spmode]').forEach(b => b.setAttribute('aria-checked', b.dataset.spmode === spMode));
+  const q = spNorm($('spSearch').value.trim());
+  const ok = i => !q || spNorm(S.drugs[i].n).includes(q) || spNorm(S.groups[S.drugs[i].g].name).includes(q);
+  const all = S.drugs.map((_, i) => i);
+  if (spMode === 'abc') {
+    spOrder = all.filter(ok).sort((a, b) => S.drugs[a].n.localeCompare(S.drugs[b].n, 'ru', { sensitivity: 'base' }));
+    let letter = '';
+    for (const i of spOrder) {
+      const L = S.drugs[i].n[0].toUpperCase();
+      if (L !== letter) { letter = L; const h = document.createElement('div'); h.className = 'sp-letter'; h.textContent = L; box.append(h); }
+      box.append(spItem(i, S.groups[S.drugs[i].g].name));
+    }
+  } else {
+    spOrder = all.filter(ok);
+    let tid = '', g = -1;
+    for (const i of spOrder) {
+      const d = S.drugs[i], gr = S.groups[d.g];
+      if (gr.tid !== tid) { tid = gr.tid; const h = document.createElement('div'); h.className = 'sp-topic'; h.textContent = `${tid.slice(1)} · ${S.topics[tid]}`; box.append(h); }
+      if (d.g !== g) { g = d.g; const h = document.createElement('div'); h.className = 'sp-group'; h.textContent = gr.name; box.append(h); }
+      box.append(spItem(i, ''));
+    }
+  }
+  if (!spOrder.length) { const p = document.createElement('p'); p.className = 'sp-none'; p.textContent = 'Ничего не нашлось'; box.append(p); }
+}
+document.querySelectorAll('[data-spmode]').forEach(b => b.onclick = () => { spMode = b.dataset.spmode; save('oz.spmode', spMode); spScroll = 0; renderSprav(); });
+$('spSearch').oninput = () => renderSprav();
+$('spBack').onclick = () => { spScroll = 0; renderHome(); show('home'); };
+function spCards(ids) {
+  return ids.map(id => {
+    const c = window.SPRAV.cards[id];
+    const body = c.a.length > 1 ? `<ul>${c.a.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p>${esc(c.a[0])}</p>`;
+    return `<div class="sp-q">${esc(c.q)}</div>${body}`;
+  }).join('');
+}
+function openDrug(i) {
+  const S = window.SPRAV, d = S.drugs[i], g = S.groups[d.g];
+  spCur = i;
+  if (!spOrder.includes(i)) spOrder = S.drugs.map((_, k) => k);
+  const pos = spOrder.indexOf(i);
+  $('drName').textContent = d.n[0].toUpperCase() + d.n.slice(1);
+  $('drPos').textContent = `${pos + 1} / ${spOrder.length}`;
+  $('drPath').innerHTML = [`Тема ${g.tid.slice(1)} · ${S.topics[g.tid]}`, g.sec, g.name].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('');
+  const sec = (title, html) => `<section class="sp-sec"><h3>${title}</h3>${html || '<p class="sp-none">Не указано</p>'}</section>`;
+  const same = S.drugs.map((x, k) => [x, k]).filter(([x, k]) => x.g === d.g && k !== i);
+  $('drBody').innerHTML =
+    sec('Классификация', `<p>Тема ${g.tid.slice(1)} «${esc(S.topics[g.tid])}» → раздел «${esc(g.sec)}» → группа «${esc(g.name)}».</p>` + spCards(g.about)) +
+    sec('Показания', spCards(g.ind)) +
+    sec('Фармакологические эффекты', spCards(g.eff)) +
+    sec('Побочные эффекты', spCards(g.side)) +
+    sec('Противопоказания', spCards(g.contra)) +
+    sec('Особенности', spCards(d.f) + spCards(g.feat)) +
+    sec('Препараты той же группы', same.length ? `<div class="sp-links">${same.map(([x, k]) => `<button data-k="${k}">${esc(x.n)}</button>`).join('')}</div>` : '');
+  $('drBody').querySelectorAll('[data-k]').forEach(b => b.onclick = () => openDrug(+b.dataset.k));
+  $('drPrev').disabled = pos <= 0;
+  $('drNext').disabled = pos >= spOrder.length - 1;
+  show('drug');
+}
+$('drPrev').onclick = () => { const p = spOrder.indexOf(spCur); if (p > 0) openDrug(spOrder[p - 1]); };
+$('drNext').onclick = () => { const p = spOrder.indexOf(spCur); if (p < spOrder.length - 1) openDrug(spOrder[p + 1]); };
+$('drBack').onclick = () => { show('sprav'); window.scrollTo(0, spScroll); };
+
 // ── Шпаргалки ──
 const sheetsOf = tid => (window.SHEETS && window.SHEETS[tid]) || [];
 const sheetFor = (tid, sec) => sheetsOf(tid).find(sh => sh.secs.includes(sec));
@@ -1203,6 +1302,8 @@ function rememberScreen(screen) {
   else if (screen === 'drugsScr') last.scope = drugScope;
   else if (screen === 'quiz' || screen === 'study') last.key = sessKey();
   else if (screen === 'sheet') last = { screen: 'topic', tid: curTid };
+  else if (screen === 'sprav') last = { screen: 'sprav' };
+  else if (screen === 'drug') last = { screen: 'drug', n: spCur };
   else if (screen === 'results' || screen === 'ready') last = run.kind === 'drugs' ? { screen: 'drugsScr', scope: run.scope || 'all' } : { screen: 'topic', tid: run.tid };
   else if (screen === 'settings' || screen === 'help') last = { screen, back: screenBefore, tid: curTid };
   save('oz.last', last);
@@ -1220,6 +1321,8 @@ function restoreScreen() {
     }
     if (last.screen === 'topic' && TOPIC[last.tid]) return openTopic(last.tid);
     if (last.screen === 'drugsScr') return openDrugs(last.scope || 'all');
+    if (last.screen === 'sprav') return openSprav();
+    if (last.screen === 'drug') return openSprav(() => openDrug(last.n));
     if (last.screen === 'unfinished' && allSessions().length) { renderUnfinished(); return show('unfinished'); }
     if (last.screen === 'settings' || last.screen === 'help') {
       if (TOPIC[last.tid]) curTid = last.tid;
