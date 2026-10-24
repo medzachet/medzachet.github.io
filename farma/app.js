@@ -576,12 +576,11 @@ function pauseToTopic() {
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 // ── Справочник препаратов (данные — spravochnik.js, грузится при первом открытии) ──
 let spMode = load('oz.spmode', 'abc'), spOrder = [], spCur = 0, spScroll = 0;
-// Раскрытые буквы / темы. В алфавите сначала всё открыто, в темах — закрыто. «По одной» — открываешь одну, остальные закрываются.
+// Раскрытые буквы / темы: нажатие открывает или закрывает. В алфавите сначала всё открыто, в темах — закрыто.
 const spOpen = { abc: null, topic: new Set() };
-let spOne = load('oz.spone', false);
 function spToggle(key) {
   const set = spOpen[spMode];
-  if (set.has(key)) set.delete(key); else { if (spOne) set.clear(); set.add(key); }
+  if (set.has(key)) set.delete(key); else set.add(key);
   renderSprav();
 }
 function loadSprav(then) {
@@ -609,6 +608,7 @@ function spItem(i) {
   return b;
 }
 const spGrid = () => { const g = document.createElement('div'); g.className = 'sp-grid'; return g; };
+const spLetter = n => /[a-zа-яё]/i.test(n[0]) ? n[0].toUpperCase() : '0–9';
 function spHead(key, num, name, count, open) {
   const h = document.createElement('button');
   h.className = 'sp-topic' + (spMode === 'abc' ? ' sp-abc' : ''); h.setAttribute('aria-expanded', open);
@@ -620,7 +620,6 @@ function spHead(key, num, name, count, open) {
 function renderSprav() {
   const S = window.SPRAV, box = $('spList'); box.innerHTML = '';
   document.querySelectorAll('[data-spmode]').forEach(b => b.setAttribute('aria-checked', b.dataset.spmode === spMode));
-  $('spOne').setAttribute('aria-checked', spOne);
   // поиск по началу слова: «ин» → «индапамид», «кромогликат натрия (Интал)», но не «клиндамицин»
   const q = spNorm($('spSearch').value.trim());
   const ok = i => !q || spNorm(S.drugs[i].n).split(/[^a-zа-я0-9%]+/).some(w => w.startsWith(q));
@@ -629,8 +628,8 @@ function renderSprav() {
   const all = S.drugs.map((_, i) => i);
   if (spMode === 'abc') {
     spOrder = all.filter(ok).sort((a, b) => S.drugs[a].n.localeCompare(S.drugs[b].n, 'ru', { sensitivity: 'base' }));
-    for (const i of spOrder) { const L = S.drugs[i].n[0].toUpperCase(); add(L, L, '', i); }
-    if (!spOpen.abc) spOpen.abc = new Set(spOne ? [] : groups.map(g => g.key));
+    for (const i of spOrder) { const L = spLetter(S.drugs[i].n); add(L, L, '', i); }
+    if (!spOpen.abc) spOpen.abc = new Set(groups.map(g => g.key));
   } else {
     spOrder = all.filter(ok);
     for (const i of spOrder) { const tid = S.groups[S.drugs[i].g].tid; add(tid, tid.slice(1), S.topics[tid], i); }
@@ -643,9 +642,8 @@ function renderSprav() {
   }
   if (!spOrder.length) { const p = document.createElement('p'); p.className = 'sp-none'; p.textContent = 'Ничего не нашлось'; box.append(p); }
 }
-$('spAllOpen').onclick = () => { spOpen[spMode] = new Set(spMode === 'abc' ? window.SPRAV.drugs.map(d => d.n[0].toUpperCase()) : Object.keys(window.SPRAV.topics)); spOne = false; save('oz.spone', spOne); renderSprav(); };
+$('spAllOpen').onclick = () => { spOpen[spMode] = new Set(spMode === 'abc' ? window.SPRAV.drugs.map(d => spLetter(d.n)) : Object.keys(window.SPRAV.topics)); renderSprav(); };
 $('spAllClose').onclick = () => { spOpen[spMode] = new Set(); renderSprav(); };
-$('spOne').onclick = () => { spOne = !spOne; save('oz.spone', spOne); if (spOne) spOpen[spMode] = new Set(); renderSprav(); };
 document.querySelectorAll('[data-spmode]').forEach(b => b.onclick = () => { spMode = b.dataset.spmode; save('oz.spmode', spMode); spScroll = 0; renderSprav(); });
 $('spSearch').oninput = () => renderSprav();
 $('spBack').onclick = () => { spScroll = 0; renderHome(); show('home'); };
