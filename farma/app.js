@@ -630,13 +630,7 @@ function renderSprav() {
 document.querySelectorAll('[data-spmode]').forEach(b => b.onclick = () => { spMode = b.dataset.spmode; save('oz.spmode', spMode); spScroll = 0; renderSprav(); });
 $('spSearch').oninput = () => renderSprav();
 $('spBack').onclick = () => { spScroll = 0; renderHome(); show('home'); };
-function spCards(ids) {
-  return ids.map(id => {
-    const c = window.SPRAV.cards[id];
-    const body = c.a.length > 1 ? `<ul>${c.a.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : `<p>${esc(c.a[0])}</p>`;
-    return `<div class="sp-q">${esc(c.q)}</div>${body}`;
-  }).join('');
-}
+const spUl = arr => arr.length ? `<ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
 function openDrug(i) {
   const S = window.SPRAV, d = S.drugs[i], g = S.groups[d.g];
   spCur = i;
@@ -644,16 +638,17 @@ function openDrug(i) {
   const pos = spOrder.indexOf(i);
   $('drName').textContent = d.n[0].toUpperCase() + d.n.slice(1);
   $('drPos').textContent = `${pos + 1} / ${spOrder.length}`;
-  $('drPath').innerHTML = [`Тема ${g.tid.slice(1)} · ${S.topics[g.tid]}`, g.sec, g.name].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('');
+  $('drPath').innerHTML = [`Тема ${g.tid.slice(1)} · ${S.topics[g.tid]}`, g.name].map(x => `<span>${esc(x)}</span>`).join('');
   const sec = (title, html) => `<section class="sp-sec"><h3>${title}</h3>${html || '<p class="sp-none">Не указано</p>'}</section>`;
   const same = S.drugs.map((x, k) => [x, k]).filter(([x, k]) => x.g === d.g && k !== i);
+  const chain = [...g.path];
   $('drBody').innerHTML =
-    sec('Классификация', `<p>Тема ${g.tid.slice(1)} «${esc(S.topics[g.tid])}» → раздел «${esc(g.sec)}» → группа «${esc(g.name)}».</p>` + spCards(g.about)) +
-    sec('Показания', spCards(g.ind)) +
-    sec('Фармакологические эффекты', spCards(g.eff)) +
-    sec('Побочные эффекты', spCards(g.side)) +
-    sec('Противопоказания', spCards(g.contra)) +
-    sec('Особенности', spCards(d.f) + spCards(g.feat)) +
+    sec('Классификация', `<p class="sp-chain">${chain.map(esc).join(' → ')}</p>` + (g.about ? `<p>${esc(g.about)}</p>` : '')) +
+    sec('Показания', spUl(g.ind)) +
+    sec('Фармакологические эффекты', spUl(g.eff)) +
+    sec('Побочные эффекты', spUl(g.side)) +
+    sec('Противопоказания', spUl(g.contra)) +
+    sec('Особенности', (d.f.length ? `<div class="sp-q">${esc(d.n[0].toUpperCase() + d.n.slice(1))}</div>${spUl(d.f)}` + (g.feat.length ? '<div class="sp-q">Вся группа</div>' : '') : '') + spUl(g.feat)) +
     sec('Препараты той же группы', same.length ? `<div class="sp-links">${same.map(([x, k]) => `<button data-k="${k}">${esc(x.n)}</button>`).join('')}</div>` : '');
   $('drBody').querySelectorAll('[data-k]').forEach(b => b.onclick = () => openDrug(+b.dataset.k));
   $('drPrev').disabled = pos <= 0;

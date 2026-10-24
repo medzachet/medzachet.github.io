@@ -344,3 +344,4 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .sp-links { display: flex; flex-wrap: wrap; gap: 6px; }
 .sp-links button { appearance: none; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600; padding: 7px 12px; border-radius: 999px;
   background: var(--card2); border: 1px solid var(--c2); color: var(--ink); }
+.sp-chain { font-weight: 600; }
