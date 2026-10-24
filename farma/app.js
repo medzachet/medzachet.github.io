@@ -574,6 +574,7 @@ function pauseToTopic() {
 const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 // ── Справочник препаратов (данные — spravochnik.js, грузится при первом открытии) ──
 let spMode = load('oz.spmode', 'abc'), spOrder = [], spCur = 0, spScroll = 0;
+const spOpen = new Set();   // раскрытые темы в режиме «По темам»
 function loadSprav(then) {
   if (window.SPRAV) return then();
   const sc = document.createElement('script');
@@ -591,16 +592,14 @@ function openSprav(after) {
     if (after) after();
   });
 }
-function spItem(i, sub) {
-  const d = window.SPRAV.drugs[i];
+function spItem(i) {
   const b = document.createElement('button');
   b.className = 'sp-item';
-  b.innerHTML = '<span></span><small></small>';
-  b.firstChild.textContent = d.n;
-  b.lastChild.textContent = sub;
+  b.textContent = window.SPRAV.drugs[i].n;
   b.onclick = () => { spScroll = window.scrollY; openDrug(i); };
   return b;
 }
+const spGrid = () => { const g = document.createElement('div'); g.className = 'sp-grid'; return g; };
 function renderSprav() {
   const S = window.SPRAV, box = $('spList'); box.innerHTML = '';
   document.querySelectorAll('[data-spmode]').forEach(b => b.setAttribute('aria-checked', b.dataset.spmode === spMode));
@@ -609,20 +608,28 @@ function renderSprav() {
   const all = S.drugs.map((_, i) => i);
   if (spMode === 'abc') {
     spOrder = all.filter(ok).sort((a, b) => S.drugs[a].n.localeCompare(S.drugs[b].n, 'ru', { sensitivity: 'base' }));
-    let letter = '';
+    let letter = '', grid;
     for (const i of spOrder) {
       const L = S.drugs[i].n[0].toUpperCase();
-      if (L !== letter) { letter = L; const h = document.createElement('div'); h.className = 'sp-letter'; h.textContent = L; box.append(h); }
-      box.append(spItem(i, S.groups[S.drugs[i].g].name));
+      if (L !== letter) { letter = L; const h = document.createElement('div'); h.className = 'sp-letter'; h.textContent = L; grid = spGrid(); box.append(h, grid); }
+      grid.append(spItem(i));
     }
   } else {
+    // темы — раскрывающиеся списки; при поиске раскрыты все найденные
     spOrder = all.filter(ok);
-    let tid = '', g = -1;
-    for (const i of spOrder) {
-      const d = S.drugs[i], gr = S.groups[d.g];
-      if (gr.tid !== tid) { tid = gr.tid; const h = document.createElement('div'); h.className = 'sp-topic'; h.textContent = `${tid.slice(1)} · ${S.topics[tid]}`; box.append(h); }
-      if (d.g !== g) { g = d.g; const h = document.createElement('div'); h.className = 'sp-group'; h.textContent = gr.name; box.append(h); }
-      box.append(spItem(i, ''));
+    const byTid = {};
+    for (const i of spOrder) (byTid[S.groups[S.drugs[i].g].tid] = byTid[S.groups[S.drugs[i].g].tid] || []).push(i);
+    for (const tid of Object.keys(byTid)) {
+      const open = !!q || spOpen.has(tid);
+      const h = document.createElement('button');
+      h.className = 'sp-topic'; h.setAttribute('aria-expanded', open);
+      h.innerHTML = '<b></b><span></span><small></small>';
+      h.children[0].textContent = tid.slice(1);
+      h.children[1].textContent = S.topics[tid];
+      h.children[2].textContent = byTid[tid].length;
+      h.onclick = () => { spOpen.has(tid) ? spOpen.delete(tid) : spOpen.add(tid); renderSprav(); };
+      box.append(h);
+      if (open) { const grid = spGrid(); byTid[tid].forEach(i => grid.append(spItem(i))); box.append(grid); }
     }
   }
   if (!spOrder.length) { const p = document.createElement('p'); p.className = 'sp-none'; p.textContent = 'Ничего не нашлось'; box.append(p); }
@@ -638,17 +645,20 @@ function openDrug(i) {
   const pos = spOrder.indexOf(i);
   $('drName').textContent = d.n[0].toUpperCase() + d.n.slice(1);
   $('drPos').textContent = `${pos + 1} / ${spOrder.length}`;
-  $('drPath').innerHTML = [`Тема ${g.tid.slice(1)} · ${S.topics[g.tid]}`, g.name].map(x => `<span>${esc(x)}</span>`).join('');
-  const sec = (title, html) => `<section class="sp-sec"><h3>${title}</h3>${html || '<p class="sp-none">Не указано</p>'}</section>`;
+  $('drPath').innerHTML = `<span>Тема ${g.tid.slice(1)} · ${esc(S.topics[g.tid])}</span>`;
+  const empty = [];   // пустые разделы — одной строкой внизу, чтобы не растягивать страницу
+  const sec = (title, html) => html ? `<section class="sp-sec"><h3>${title}</h3>${html}</section>` : (empty.push(title.toLowerCase()), '');
   const same = S.drugs.map((x, k) => [x, k]).filter(([x, k]) => x.g === d.g && k !== i);
-  const chain = [...g.path];
+  const lvl = (x, k, cls) => { const [n, note] = x.split(' — '); return `<li class="${cls}" style="--lv:${k}">${esc(n)}${note ? `<small>${esc(note)}</small>` : ''}</li>`; };
+  const tree = '<ol class="sp-tree">' + g.path.map((x, k) => lvl(x, k, k === g.path.length - 1 ? 'grp' : '')).join('') + lvl(d.n, g.path.length, 'me') + '</ol>';
   $('drBody').innerHTML =
-    sec('Классификация', `<p class="sp-chain">${chain.map(esc).join(' → ')}</p>` + (g.about ? `<p>${esc(g.about)}</p>` : '')) +
+    sec('Классификация', tree + (g.about ? `<p class="sp-about">${esc(g.about)}</p>` : '')) +
     sec('Показания', spUl(g.ind)) +
     sec('Фармакологические эффекты', spUl(g.eff)) +
     sec('Побочные эффекты', spUl(g.side)) +
     sec('Противопоказания', spUl(g.contra)) +
     sec('Особенности', (d.f.length ? `<div class="sp-q">${esc(d.n[0].toUpperCase() + d.n.slice(1))}</div>${spUl(d.f)}` + (g.feat.length ? '<div class="sp-q">Вся группа</div>' : '') : '') + spUl(g.feat)) +
+    (empty.length ? `<p class="sp-none sp-empty">В лекции не указано: ${empty.join(', ')}</p>` : '') +
     sec('Препараты той же группы', same.length ? `<div class="sp-links">${same.map(([x, k]) => `<button data-k="${k}">${esc(x.n)}</button>`).join('')}</div>` : '');
   $('drBody').querySelectorAll('[data-k]').forEach(b => b.onclick = () => openDrug(+b.dataset.k));
   $('drPrev').disabled = pos <= 0;
