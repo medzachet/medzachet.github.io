@@ -175,7 +175,8 @@ function renderTopic() {
   $('tRing').style.setProperty('--p', `${Math.round(l / n * 100)}%`);
   $('tRingNum').textContent = l;
   const bl = topicBlocks(curTid), cur = firstNotDone(curTid);
-  $('tCards').innerHTML = cur >= 0
+  if (curTid === READ_TID) $('tCards').innerHTML = `▶ Все определения подряд<small>${loadSessions()[`${READ_TID}:read`] ? 'продолжить чтение' : `${n} карточек · без опроса`}</small>`;
+  else $('tCards').innerHTML = cur >= 0
     ? `▶ Карточки<small>${esc(blockLabel(bl[cur]))}</small>`
     : `↻ Карточки заново<small>все разделы пройдены</small>`;
   const pos = settings.seqPos[curTid] || 0;
@@ -210,6 +211,7 @@ function renderTopic() {
 }
 $('topicBack').onclick = () => { renderHome(); show('home'); };
 $('tCards').onclick = () => {
+  if (curTid === READ_TID) return startRead(curTid);
   let i = firstNotDone(curTid);
   if (i < 0) { settings.blocksDone[curTid] = []; saveSettings(); i = 0; }
   openBlock(curTid, i);
@@ -718,7 +720,15 @@ function startBlock(tid, idx) {
   block = { idx, cards: b.cards, phase: 'study', studyIdx: 0, quizLeft: [] };
   showStudy();
 }
-const curBlockLabel = () => blockLabel(topicBlocks(run.tid)[block.idx]);
+// «Подряд» (тема «Определения»): все карточки по порядку — только читать, без разделов и опроса
+const READ_TID = 'def';
+function startRead(tid) {
+  if (loadSessions()[`${tid}:read`]) return resumeSession(`${tid}:read`, 'topic');
+  resetRun(tid, 'read');
+  block = { idx: -1, read: true, cards: TOPIC[tid].cards, phase: 'study', studyIdx: 0, quizLeft: [] };
+  showStudy();
+}
+const curBlockLabel = () => block.read ? 'Все определения подряд' : blockLabel(topicBlocks(run.tid)[block.idx]);
 function showStudy() {
   abortListening(); hush();
   block.phase = 'study';
@@ -733,14 +743,15 @@ function showStudy() {
   $('sDots').innerHTML = block.cards.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
   $('sPrev').disabled = i === 0;
   const last = i === block.cards.length - 1;
-  $('sNext').textContent = last ? 'К опросу ▶' : 'Дальше →';
-  $('sSkip').hidden = last;
+  $('sNext').textContent = last ? (block.read ? 'Готово ✓' : 'К опросу ▶') : 'Дальше →';
+  $('sSkip').hidden = last || block.read;
   show('study');
   saveSession();
 }
 function studyMove(d) {
   const n = block.studyIdx + d;
   if (n < 0) return;
+  if (n >= block.cards.length && block.read) { hush(); dropSession(sessKey()); toast('Все определения прочитаны'); return openTopic(run.tid); }
   if (n >= block.cards.length) return startBlockQuiz();
   block.studyIdx = n; showStudy();
 }
@@ -805,7 +816,7 @@ function saveSession() {
   };
   save('oz.sessions', all);
 }
-const KIND_LABEL = { mix: 'Микс', seq: 'По лекции', block: 'Карточки', errors: 'Ошибки', drugs: 'Препараты', rand: '10 наугад' };
+const KIND_LABEL = { read: 'Подряд', mix: 'Микс', seq: 'По лекции', block: 'Карточки', errors: 'Ошибки', drugs: 'Препараты', rand: '10 наугад' };
 function allSessions() {
   return Object.entries(loadSessions())
     .filter(([, s]) => s && s.v === 2 && TOPIC[s.tid])
@@ -818,7 +829,8 @@ function sessionInfo(key, s) {
   if (s.kind === 'drugs') detail = `${s.scope === 'all' ? 'все темы' : shortName(TOPIC[s.scope] || t)} · ${Math.max(s.asked, 1)} из ${s.total || '?'}`;
   if (s.kind === 'rand') detail = `${Math.max(s.asked, 1)} из ${s.total || RAND_N} · ✓ ${s.ok}`;
   if (s.kind === 'seq') detail = `${Math.min((settings.seqPos[s.tid] || 0) + (s.currentId ? 1 : 0), t.cards.length)} из ${t.cards.length}`;
-  if (s.block) { const b = topicBlocks(s.tid)[s.block.idx]; if (b) detail = blockLabel(b) + (s.block.phase === 'study' ? '' : ' · опрос'); }
+  if (s.kind === 'read' && s.block) detail = `${s.block.studyIdx + 1} из ${t.cards.length}`;
+  else if (s.block) { const b = topicBlocks(s.tid)[s.block.idx]; if (b) detail = blockLabel(b) + (s.block.phase === 'study' ? '' : ' · опрос'); }
   return { ...s, key, detail, what: `${KIND_LABEL[s.kind]} · ${detail}` };
 }
 // Строка «Продолжить»: ▶ — продолжить, ✕ — забыть
@@ -860,8 +872,8 @@ function resumeSession(key, from, direct) {
   const ids = a => (a || []).filter(id => CARD[id]).map(id => CARD[id]);
   session = { asked: s.asked, ok: s.ok, missed: new Map(ids(s.missed).map(c => [c.id, c])) };
   retryList = s.retry ? ids(s.retry) : null;
-  const bl = s.block && topicBlocks(s.tid)[s.block.idx];
-  if (bl) block = { idx: s.block.idx, cards: bl.cards, phase: s.block.phase, studyIdx: s.block.studyIdx || 0, quizLeft: ids(s.block.quizLeft) };
+  const bl = s.block && (s.kind === 'read' ? { cards: TOPIC[s.tid].cards } : topicBlocks(s.tid)[s.block.idx]);
+  if (bl) block = { read: s.kind === 'read', idx: s.block.idx, cards: bl.cards, phase: s.block.phase, studyIdx: Math.min(s.block.studyIdx || 0, bl.cards.length - 1), quizLeft: ids(s.block.quizLeft) };
   if (block && block.phase === 'study') return showStudy();
   if (s.kind === 'rand') { randList = ids(s.rand); queue = new Array(s.total || RAND_N); }
   if (s.kind === 'drugs') { run.scope = s.scope; drugMode = s.drugMode; drugList = ids(s.drugs); queue = new Array(s.total || drugList.length); }
