@@ -461,7 +461,7 @@ function drugGroups(scope) {
     if (!g) out.push(g = { key, tid: c.tid, name: scope === 'all' ? shortName(TOPIC[c.tid]) : c.s, cards: [], drugs: new Set() });
     g.cards.push(c); g.drugs.add(c.drug);
   }
-  return out;
+  return scope === 'all' ? out.sort((a, b) => a.tid.localeCompare(b.tid)) : out;   // лекции по номеру (02 добавлена позже)
 }
 let drugScope = 'all', drugsFromAll = false;
 function openDrugs(scope) {
@@ -631,7 +631,7 @@ function renderSprav() {
     for (const i of spOrder) { const L = spLetter(S.drugs[i].n); add(L, L, '', i); }
     if (!spOpen.abc) spOpen.abc = new Set(groups.map(g => g.key));
   } else {
-    spOrder = all.filter(ok);
+    spOrder = all.filter(ok).sort((a, b) => S.groups[S.drugs[a].g].tid.localeCompare(S.groups[S.drugs[b].g].tid));   // темы по номеру (02 добавлена позже)
     for (const i of spOrder) { const tid = S.groups[S.drugs[i].g].tid; add(tid, tid.slice(1), S.topics[tid], i); }
   }
   const set = spOpen[spMode];
