@@ -692,7 +692,8 @@ function showSheet() {
   const sh = sheetList[sheetIdx];
   $('shTitle').textContent = sh.title;
   $('shPos').textContent = sheetList.length > 1 ? `${sheetIdx + 1} / ${sheetList.length}` : '';
-  $('shImg').src = sh.f; $('shImg').alt = sh.title;
+  $('shImg').src = sh.f + '?v=' + ($('verLine').textContent.replace(/\D/g, '') || '0');   // версия — чтобы не показывалась старая картинка из кэша
+  $('shImg').alt = sh.title;
   $('shWrap').classList.remove('zoom');
   $('shPrev').disabled = sheetIdx === 0;
   const last = sheetIdx === sheetList.length - 1;
