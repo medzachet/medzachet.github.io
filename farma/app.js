@@ -330,12 +330,19 @@ const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const IS_ANDROID = /android/i.test(navigator.userAgent);
 const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 let rec = null, holding = false, baseText = '';
+// Какое окошко заполняет микрофон: опрос (answer) или тренажёр определений (rpAnswer)
+const MIC_QUIZ = { input: 'answer', btn: 'mic', label: 'micLabel' }, MIC_REP = { input: 'rpAnswer', btn: 'rpMic', label: 'rpLabel' };
+let micUI = MIC_QUIZ;
+// На компьютере распознавание есть не везде — подсказываем печатать, голосом удобнее с телефона
+const IS_DESKTOP = !('ontouchstart' in window) && matchMedia('(hover: hover) and (pointer: fine)').matches;
+const MIC_IDLE = !Recognition ? '⌨ Голос недоступен — печатай ответ' : IS_DESKTOP ? '⌨ На компьютере удобнее печатать · голосом — с телефона' : 'Удерживай и говори';
 let finishing = null;   // запись, которая уже остановлена, но ещё отдаёт последние слова
 
 function startListening() {
   if (!Recognition || rec) return;
   hush();
-  baseText = $('answer').value.trim();
+  const ui = micUI;
+  baseText = $(ui.input).value.trim();
   const r = new Recognition();
   rec = r;
   r.lang = 'ru-RU'; r.continuous = true; r.interimResults = true;
@@ -343,9 +350,10 @@ function startListening() {
   r.onresult = e => {
     if (r !== rec && r !== finishing) return;
     const heard = mergeResults(e.results);
-    $('answer').value = (baseText ? baseText + ' ' : '') + heard;
+    $(ui.input).value = (baseText ? baseText + ' ' : '') + heard;
   };
   r.onerror = e => {
+    if (ui !== MIC_QUIZ) { $(ui.label).textContent = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Нет доступа к микрофону — печатай ответ' : 'Распознавание недоступно — печатай ответ'; return; }
     if (e.error === 'not-allowed' || e.error === 'service-not-allowed')
       showFeedback('bad', 'Нет доступа к микрофону', '<p>Разреши микрофон для этой страницы в настройках браузера или отвечай текстом.</p>');
     else if (e.error === 'network')
@@ -355,11 +363,11 @@ function startListening() {
   };
   r.onend = () => {
     // Телефон может оборвать запись на паузе — если кнопку ещё держат, продолжаем
-    if (r === rec && holding) { baseText = $('answer').value.trim(); try { r.start(); return; } catch {} }
+    if (r === rec && holding) { baseText = $(ui.input).value.trim(); try { r.start(); return; } catch {} }
     if (r === rec) rec = null;
     if (r === finishing) finishing = null;
     // Исправляем ослышки терминов по словарю лекций
-    $('answer').value = Checker.correctTerms($('answer').value, window.VOCAB);
+    $(ui.input).value = Checker.correctTerms($(ui.input).value, window.VOCAB);
     updateMic();
   };
   try { r.start(); } catch { rec = null; }
@@ -394,27 +402,33 @@ function abortListening() {
 }
 function updateMic() {
   const on = !!rec;
-  $('mic').classList.toggle('on', on);
-  $('micLabel').textContent = !Recognition ? 'Голос недоступен — пиши' : on ? 'Говори… отпусти, чтобы остановить' : 'Удерживай и говори';
+  for (const ui of [MIC_QUIZ, MIC_REP]) $(ui.btn).classList.toggle('on', on && ui === micUI);
+  $(MIC_QUIZ.label).textContent = on && micUI === MIC_QUIZ ? 'Говори… отпусти, чтобы остановить' : MIC_IDLE;
+  if (micUI === MIC_REP && screenNow === 'rep') $(MIC_REP.label).textContent = on ? 'Говори… отпусти, чтобы остановить' : $('rpAnswer').value.trim() ? 'Нажми ✓ Проверить — или допиши' : MIC_IDLE;
 }
-const mic = $('mic');
 // На телефоне — сенсорные события: долгое касание не превращается в «меню» и не обрывает запись
-function micDown(e) {
-  if (!Recognition) { $('answer').focus(); return; }
+function micDown(e, ui) {
+  micUI = ui;
+  if (!Recognition) { $(ui.input).focus(); return; }
   if (e.cancelable) e.preventDefault();
   if (holding) return;
   holding = true; startListening();
 }
 function micUp() { if (holding) stopListening(); }
-if ('ontouchstart' in window) {
-  mic.addEventListener('touchstart', micDown, { passive: false });
-  mic.addEventListener('touchend', micUp);
-  mic.addEventListener('touchcancel', micUp);
-} else {
-  mic.addEventListener('pointerdown', e => { try { mic.setPointerCapture(e.pointerId); } catch {} micDown(e); });
-  for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) mic.addEventListener(ev, micUp);
+function bindMic(ui) {
+  const el = $(ui.btn);
+  if ('ontouchstart' in window) {
+    el.addEventListener('touchstart', e => micDown(e, ui), { passive: false });
+    el.addEventListener('touchend', micUp);
+    el.addEventListener('touchcancel', micUp);
+  } else {
+    el.addEventListener('pointerdown', e => { try { el.setPointerCapture(e.pointerId); } catch {} micDown(e, ui); });
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(ev, micUp);
+  }
+  el.addEventListener('contextmenu', e => e.preventDefault());
 }
-mic.addEventListener('contextmenu', e => e.preventDefault());
+bindMic(MIC_QUIZ);
+updateMic();   // подпись под микрофоном (на компьютере — «удобнее печатать»)
 $('clear').onclick = () => { abortListening(); $('answer').value = ''; baseText = ''; $('answer').focus(); };
 
 // ── Занятие: что и в каком порядке спрашиваем ──
@@ -1130,8 +1144,8 @@ function submit() {
     const lastTry = attempt === MAX_TRIES, again = lastTry ? 'Подумай ещё раз — последняя попытка.' : 'Подумай ещё.';
     let title, speech;
     if (current.t === 'list') {
-      title = got ? `Назвала ${got} из ${need}` : 'Пока не то';
-      speech = got ? `Назвала ${got} из ${need}. Вспомни ещё ${left}.` : again;
+      title = got ? `Названо ${got} из ${need}` : 'Пока не то';
+      speech = got ? `Названо ${got} из ${need}. Вспомни ещё ${left}.` : again;
       showFeedback('warn', title, `<p>${got ? `Вспомни ещё ${left} ${plural(left, 'пункт', 'пункта', 'пунктов')}.` : again}${got && lastTry ? ' Последняя попытка.' : ''}</p>`);
     } else if (current.t === 'def') {
       title = got ? 'Не совсем точно' : 'Неверно';
@@ -1406,9 +1420,11 @@ renderHome();
 if (!(location.hash.startsWith('#card=') && openCardView(decodeURIComponent(location.hash.slice(6))))) restoreScreen();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 
-// ── Повторяй за Мариной: определение по смысловым кускам (поле rp). Марина говорит кусок — повторяешь вслух — дальше ──
-const REP_OK = ['Молодец, принято!', 'Отлично, принято!', 'Йюху! Принято.', 'Умница, принято!'];
-let rp = null;   // { tid, cards, i, part, fails, r }
+// ── Тренажёр определений: Марина говорит часть (rp) — текст исчезает — вспоминаешь и повторяешь (микрофон как в опросе или текстом) ──
+const REP_SAY = ['Принято!', 'Отлично, принято!', 'Есть! Принято.', 'Супер, принято!'];
+const REP_POP = ['🖐 Пятёрка в лоб!', '🎉 Определение в кармане!', '🧠 Синапсы записали!', '📜 Чётко, как по лекции!', '⭐ Это определение уже не страшно!',
+  '🚀 Как по нотам!', '🔐 Зафиксировано в долговременной памяти!', '🥇 Ещё одно — в копилку зачёта!'];
+let rp = null;   // { tid, cards, i, part, fails }
 const repNorm = t => (t || '').toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/g, ' ').trim().split(' ').filter(Boolean);
 function repLev(a, b) {
   const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
@@ -1416,7 +1432,7 @@ function repLev(a, b) {
   for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
   return d[a.length][b.length];
 }
-// засчитано, если узнаны почти все значимые слова куска (короткие куски — все); окончания и ослышки прощаются
+// засчитано, если узнаны почти все значимые слова части (короткие — все); окончания и ослышки прощаются
 function repMatch(target, heard) {
   const tw = repNorm(target).filter(w => w.length >= 3);
   const hw = repNorm(Checker.correctTerms(heard, window.VOCAB));
@@ -1431,87 +1447,83 @@ const repTerm = c => c.q.replace(/^\d+\.\s*/, '').replace(/ — дай опре�
 function startRep(tid) {
   const cards = TOPIC[tid].cards.filter(c => c.rp && c.rp.length).map(c => CARD[c.id]);
   if (!cards.length) return;
-  rp = { tid, cards, i: Math.min(settings.repPos || 0, cards.length - 1), part: 0, fails: 0, r: null };
+  rp = { tid, cards, i: Math.min(settings.repPos || 0, cards.length - 1), part: 0, fails: 0, shown: false };
   abortListening(); hush();
+  micUI = MIC_REP;
   show('rep');
-  repCard(true);
+  repCard();
 }
+// shown — текущая часть видна (пока Марина говорит или после двух ошибок); иначе «…» — вспомни сам
 function repRender() {
-  const c = rp.cards[rp.i];
+  const c = rp.cards[rp.i], done = rp.part >= c.rp.length;
   $('rpPos').textContent = `${rp.i + 1} / ${rp.cards.length}`;
   $('rpTerm').textContent = repTerm(c);
-  $('rpParts').innerHTML = c.rp.map((p, k) => k < rp.part ? `<span class="done">${esc(p)}</span>` : k === rp.part ? `<span class="now">${esc(p)}</span>` : '<span class="later">…</span>').join(' ');
-  $('rpSkip').querySelector('span:last-child').textContent = rp.part >= c.rp.length ? 'Следующее' : 'Пропустить';
+  $('rpParts').innerHTML = c.rp.map((p, k) => k < rp.part ? `<span class="done">${esc(p)}</span>`
+    : k === rp.part ? (rp.shown ? `<span class="now">${esc(p)}</span>` : '<span class="now hide">вспомни и повтори…</span>')
+    : '<span class="later">…</span>').join(' ');
+  $('rpCheck').disabled = done;
+  $('rpSkip').textContent = done ? 'Следующее определение →' : rp.part === c.rp.length - 1 ? 'Пропустить ⏭' : 'Пропустить часть ⏭';
 }
 const repLabel = t => { $('rpLabel').textContent = t; };
 const repLive = me => rp === me && screenNow === 'rep';
-async function repCard(first) {
-  rp.part = 0; rp.fails = 0; $('rpHeard').textContent = '';
+async function repCard() {
+  rp.part = 0; rp.fails = 0; rp.shown = false;
+  $('rpAnswer').value = ''; $('rpFb').textContent = '';
   repRender();
   const me = rp;
-  if (first) await speak('Повторяй за мной.');
-  if (!repLive(me)) return;
   await speak(repTerm(rp.cards[rp.i]) + '.');
   if (!repLive(me)) return;
   repPlay();
 }
+// Марина говорит часть: текст виден, пока звучит, потом прячется
 async function repPlay() {
-  const me = rp, c = rp.cards[rp.i], part = rp.part;
-  repRender(); repStop();
-  $('rpHeard').textContent = '';
-  repLabel('Слушай…');
+  const me = rp, part = rp.part, c = rp.cards[rp.i];
+  if (part >= c.rp.length) return;
+  abortListening();
+  rp.shown = true; repRender(); repLabel('Слушай…');
   await speak(c.rp[part]);
   if (!repLive(me) || me.part !== part) return;
-  repListen();
+  rp.shown = rp.fails >= 2; repRender();
+  repLabel(MIC_IDLE);
 }
-function repStop() { if (rp && rp.r) { const r = rp.r; rp.r = null; try { r.abort(); } catch {} } $('rpMic').classList.remove('on'); }
-function repListen() {
-  if (!Recognition) { repLabel('Голос недоступен — повтори вслух и нажми ⏭'); return; }
-  repStop(); hush();
-  const r = new Recognition(), me = rp, part = rp.part;
-  let heard = '';
-  rp.r = r;
-  r.lang = 'ru-RU'; r.continuous = false; r.interimResults = true;
-  r.onresult = e => { heard = mergeResults(e.results); $('rpHeard').textContent = heard; };
-  r.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') repLabel('Разреши микрофон для этой страницы'); };
-  r.onend = () => {
-    if (rp !== me || me.r !== r) return;
-    me.r = null; $('rpMic').classList.remove('on');
-    if (!heard) return repLabel('Не услышала — нажми на микрофон и повтори');
-    if (repMatch(me.cards[me.i].rp[part], heard)) return repAccept();
-    me.fails++;
-    repLabel(me.fails >= 3 ? 'Не получается? Можно пропустить ⏭' : 'Ещё раз');
-    speak('Ещё раз.').then(() => { if (repLive(me) && me.part === part) repPlay(); });
-  };
-  try { r.start(); $('rpMic').classList.add('on'); repLabel('Повтори вслух'); } catch { rp.r = null; }
-}
-async function repAccept() {
-  const me = rp, c = rp.cards[rp.i];
-  rp.part++; rp.fails = 0;
-  repRender();
-  if (rp.part < c.rp.length) return repPlay();
-  // всё определение повторено
-  settings.repPos = (rp.i + 1) % rp.cards.length; saveSettings();
-  repLabel('Принято! ✓');
-  await speak(REP_OK[Math.floor(Math.random() * REP_OK.length)]);
-  if (!repLive(me)) return;
-  setTimeout(() => { if (repLive(me) && me.part >= c.rp.length) repNext(); }, 900);
-}
-function repNext() { repStop(); hush(); rp.i = (rp.i + 1) % rp.cards.length; repCard(false); }
-$('rpMic').onclick = () => {
+function repCheck() {
   if (!rp) return;
-  if (rp.r) { repStop(); return repLabel('Остановлено — нажми, чтобы повторить'); }
-  if (rp.part >= rp.cards[rp.i].rp.length) return repNext();
-  repListen();
-};
-$('rpAgain').onclick = () => { if (!rp) return; if (rp.part >= rp.cards[rp.i].rp.length) rp.part = 0; repPlay(); };
+  const c = rp.cards[rp.i], me = rp, text = $('rpAnswer').value.trim();
+  if (!text || rp.part >= c.rp.length) return;
+  if (repMatch(c.rp[rp.part], text)) {
+    rp.part++; rp.fails = 0; rp.shown = false;
+    $('rpAnswer').value = ''; $('rpFb').textContent = '';
+    repRender();
+    if (rp.part < c.rp.length) return repPlay();
+    // определение целиком
+    settings.repPos = (rp.i + 1) % rp.cards.length; saveSettings();
+    repLabel('');
+    showCheer(REP_POP[Math.floor(Math.random() * REP_POP.length)]);
+    speak(REP_SAY[Math.floor(Math.random() * REP_SAY.length)]).then(() => {
+      setTimeout(() => { if (repLive(me) && me.part >= c.rp.length) repNext(); }, 1200);
+    });
+    return;
+  }
+  rp.fails++;
+  $('rpFb').textContent = rp.fails >= 2 ? 'Не совсем. Вот эта часть — повтори её' : 'Не совсем — послушай ещё раз';
+  $('rpAnswer').value = '';
+  repPlay();
+}
+function repNext() { abortListening(); hush(); hideCheer(); rp.i = (rp.i + 1) % rp.cards.length; repCard(); }
+$('rpCheck').onclick = () => { stopListening(); setTimeout(repCheck, rec || finishing ? 600 : 0); };
+$('rpAnswer').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); repCheck(); } });
+$('rpAnswer').addEventListener('input', () => updateMic());
+$('rpClear').onclick = () => { abortListening(); $('rpAnswer').value = ''; baseText = ''; $('rpAnswer').focus(); };
+$('rpAgain').onclick = () => { if (rp) repPlay(); };
 $('rpSkip').onclick = () => {
   if (!rp) return;
-  if (rp.part < rp.cards[rp.i].rp.length - 1) { rp.part++; rp.fails = 0; return repPlay(); }
+  const c = rp.cards[rp.i];
+  if (rp.part < c.rp.length - 1) { rp.part++; rp.fails = 0; $('rpAnswer').value = ''; $('rpFb').textContent = ''; return repPlay(); }
   repNext();
 };
+bindMic(MIC_REP);
 $('rpBack').onclick = () => {
-  if (rp) { repStop(); settings.repPos = rp.i; saveSettings(); }
-  hush();
-  const t = rp ? rp.tid : READ_TID; rp = null; openTopic(t);
+  abortListening(); hush(); hideCheer();
+  if (rp) { settings.repPos = rp.i; saveSettings(); }
+  const t = rp ? rp.tid : READ_TID; rp = null; micUI = MIC_QUIZ; openTopic(t);
 };

@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=59">
+  <link rel="stylesheet" href="style.css?v=60">
 </head>
 <body>
   <div class="bg-dots" aria-hidden="true"></div>
@@ -49,7 +49,7 @@
     <div id="tResumes" class="resumes"></div>
     <div class="acts">
       <button id="tCards" class="act main"></button>
-      <button id="tRep" class="act wide rep-act" hidden>🗣 Повторяй за Мариной<small>по частям, вслух</small></button>
+      <button id="tRep" class="act wide" hidden>🗣 Тренажёр определений</button>
       <button id="tMix" class="act">Микс</button>
       <button id="tSeq" class="act">По лекции</button>
       <button id="tErr" class="act">Ошибки</button>
@@ -95,7 +95,7 @@
       <p id="rdSub" class="hint"></p>
     </div>
     <label class="glass tog ready-tog"><span>Читать вопросы вслух</span><input type="checkbox" id="rdSpeak"></label>
-    <div class="bottom"><button id="readyGo" class="btn primary big">▶ Я готова</button></div>
+    <div class="bottom"><button id="readyGo" class="btn primary big">▶ Начать</button></div>
   </main>
 
   <!-- Настройки -->
@@ -121,7 +121,7 @@
       <div class="seg"><button data-theme-set="light">Светлая</button><button data-theme-set="dark">Тёмная</button><button data-theme-set="system">Авто</button></div>
     </section>
     <button class="text-btn small help-link" data-help>? Справочник</button>
-    <p id="verLine" class="ver">версия 59</p>
+    <p id="verLine" class="ver">версия 60</p>
     <p class="disclaimer">Учебный тренажёр по лекциям колледжа. Не медицинская рекомендация — не используй его для подбора лечения.</p>
   </main>
 
@@ -133,14 +133,14 @@
       <details><summary>▶ Карточки</summary><p>Учишь тему по кусочкам. Сначала читаешь несколько карточек одного раздела, листая пальцем, потом отвечаешь на них вперемешку. Пройденные кусочки запоминаются, и кнопка ведёт к следующему.</p></details>
       <details><summary>Микс</summary><p>Вся тема вперемешку без конца. Невыученное попадается чаще, выученное реже.</p></details>
       <details><summary>По лекции</summary><p>Вопросы по порядку, как в лекции. Место запоминается — можно продолжить с того же вопроса.</p></details>
-      <details><summary>Ошибки</summary><p>Только вопросы, где ты ошиблась. Ответишь верно сразу и без подсказки — вопрос уйдёт из списка.</p></details>
+      <details><summary>Ошибки</summary><p>Только вопросы, где была ошибка. Ответишь верно сразу и без подсказки — вопрос уйдёт из списка.</p></details>
       <details><summary>🎲 10 наугад</summary><p>10 случайных вопросов из темы. Каждый раз новые, пока не пройдёшь всю тему по кругу.</p></details>
       <details><summary>💊 Препараты</summary><p>Вопросы про отдельные препараты: к какой группе относится и что о нём сказано в лекции. Можно случайный препарат, группу или все вперемешку.</p></details>
       <details><summary>Разделы</summary><p>Нажми на раздел в теме — начнутся карточки именно этого раздела.</p></details>
       <details><summary>🎤 Как отвечать</summary><p>Удерживай кнопку микрофона и говори, отпусти — запись остановится. Можно говорить в несколько заходов или написать текстом. Потом «Проверить».</p></details>
       <details><summary>💡 Подсказка и ещё попытки</summary><p>Подсказка открывается по шагу за нажатие. Если ответ неполный, приложение покажет, что уже названо, и даст подумать ещё — две попытки, потом покажет ответ. «Не знаю — ответ» сразу покажет правильный ответ.</p></details>
-      <details><summary>Засчитать</summary><p>Если ответила верно, но другими словами, и проверка не поняла — нажми «Засчитать».</p></details>
-      <details><summary>Выучено</summary><p>Вопрос считается выученным, когда ты дважды ответила на него сразу и без подсказки. Ошибка сбрасывает счёт.</p></details>
+      <details><summary>Засчитать</summary><p>Если ответ верный, но другими словами, и проверка не поняла — нажми «Засчитать».</p></details>
+      <details><summary>Выучено</summary><p>Вопрос считается выученным, когда на него дважды дан верный ответ сразу и без подсказки. Ошибка сбрасывает счёт.</p></details>
       <details><summary>⏸ Пауза и «Продолжить»</summary><p>Пауза сохраняет занятие. Продолжить можно из темы или с главного экрана — строка «Незаконченные».</p></details>
       <details><summary>🔊 и ↶ Прошлые</summary><p>🔊 — прочитать вопрос ещё раз. ↶ — посмотреть прошлые вопросы этого занятия.</p></details>
       <details><summary>Тренировка или Экзамен</summary><p>В настройках. «Тренировка» прощает мелочи, «Экзамен» требует всё целиком. Определения в «Тренировке» засчитываются по главному смыслу, «Перед экзаменом» — строго, все части словами лекции.</p></details>
@@ -192,20 +192,27 @@
     </div>
   </main>
 
-  <!-- Повторяй за Мариной (определения по частям) -->
+  <!-- Тренажёр определений: Марина говорит часть — вспоминаешь и повторяешь -->
   <main id="rep" class="screen" hidden>
     <header class="row"><button id="rpBack" class="text-btn">← Назад</button><span id="rpPos" class="label"></span></header>
     <h2 id="rpTerm"></h2>
     <div id="rpParts" class="glass rp-parts"></div>
-    <p id="rpHeard" class="rp-heard"></p>
-    <div class="controls">
-      <button id="rpAgain" class="side-btn"><span class="ico">🔁</span><span>Послушать</span></button>
-      <button id="rpMic" class="mic" aria-label="Повторить вслух">
-        <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-      </button>
-      <button id="rpSkip" class="side-btn"><span class="ico">⏭</span><span>Пропустить</span></button>
+    <div class="answer">
+      <textarea id="rpAnswer" class="glass" rows="2" placeholder="Удерживай кнопку и повтори — или напиши"></textarea>
+      <div id="rpFb" class="rp-fb"></div>
+      <div class="controls">
+        <button id="rpAgain" class="side-btn"><span class="ico">🔁</span><span>Послушать</span></button>
+        <button id="rpMic" class="mic" aria-label="Микрофон: удерживай и говори">
+          <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+        <button id="rpCheck" class="side-btn"><span class="ico">✓</span><span>Проверить</span></button>
+      </div>
+      <div id="rpLabel" class="mic-label"></div>
+      <div class="under">
+        <button id="rpClear" class="text-btn small">✕ Очистить</button>
+        <button id="rpSkip" class="text-btn small">Пропустить часть ⏭</button>
+      </div>
     </div>
-    <div id="rpLabel" class="mic-label"></div>
   </main>
 
   <!-- Шпаргалка (картинка) -->
@@ -321,27 +328,27 @@
     </div>
   </main>
 
-  <script src="bank/_core.js?v=59"></script>
-  <script src="bank/vocab.js?v=59"></script>
-  <script src="bank/farm_def.js?v=59"></script>
-  <script src="bank/farm_t01.js?v=59"></script>
-  <script src="bank/farm_t02.js?v=59"></script>
-  <script src="bank/farm_t03.js?v=59"></script>
-  <script src="bank/farm_t04.js?v=59"></script>
-  <script src="bank/farm_t05.js?v=59"></script>
-  <script src="bank/farm_t06.js?v=59"></script>
-  <script src="bank/farm_t07.js?v=59"></script>
-  <script src="bank/farm_t08.js?v=59"></script>
-  <script src="bank/farm_t09.js?v=59"></script>
-  <script src="bank/farm_t10.js?v=59"></script>
-  <script src="bank/farm_t11.js?v=59"></script>
-  <script src="bank/farm_drugs.js?v=59"></script>
-  <script src="checker.js?v=59"></script>
-  <script src="cheers.js?v=59"></script>
-  <script src="sheets/index.js?v=59"></script>
-  <script src="sheets/pdf.js?v=59"></script>
-  <script src="speechtext.js?v=59"></script>
-  <script src="audio/index.js?v=59"></script>
-  <script src="app.js?v=59"></script>
+  <script src="bank/_core.js?v=60"></script>
+  <script src="bank/vocab.js?v=60"></script>
+  <script src="bank/farm_def.js?v=60"></script>
+  <script src="bank/farm_t01.js?v=60"></script>
+  <script src="bank/farm_t02.js?v=60"></script>
+  <script src="bank/farm_t03.js?v=60"></script>
+  <script src="bank/farm_t04.js?v=60"></script>
+  <script src="bank/farm_t05.js?v=60"></script>
+  <script src="bank/farm_t06.js?v=60"></script>
+  <script src="bank/farm_t07.js?v=60"></script>
+  <script src="bank/farm_t08.js?v=60"></script>
+  <script src="bank/farm_t09.js?v=60"></script>
+  <script src="bank/farm_t10.js?v=60"></script>
+  <script src="bank/farm_t11.js?v=60"></script>
+  <script src="bank/farm_drugs.js?v=60"></script>
+  <script src="checker.js?v=60"></script>
+  <script src="cheers.js?v=60"></script>
+  <script src="sheets/index.js?v=60"></script>
+  <script src="sheets/pdf.js?v=60"></script>
+  <script src="speechtext.js?v=60"></script>
+  <script src="audio/index.js?v=60"></script>
+  <script src="app.js?v=60"></script>
 </body>
 </html>
