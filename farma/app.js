@@ -716,7 +716,8 @@ function sheetSync() {
   sheetIdx = i;
   $('shPos').textContent = sheetList.length > 1 ? `${i + 1} / ${sheetList.length}` : '';
   const last = i === sheetList.length - 1;
-  $('shNext').hidden = !(last && sheetDone);   // листаются свайпом; кнопка — только на последней, если дальше карточки
+  $('shNext').hidden = !(last && sheetDone);
+  $('shL').hidden = i === 0; $('shR').hidden = last;   // листаются свайпом; кнопка — только на последней, если дальше карточки
   for (const j of [i - 1, i + 1]) { const im = tr.children[j] && tr.children[j].firstChild; if (im) im.loading = 'eager'; }
   sheetFit();
 }
@@ -726,6 +727,10 @@ window.addEventListener('resize', () => { if (screenNow === 'sheet') sheetFit();
 let sheetTick = 0;
 $('shTrack').addEventListener('scroll', () => { cancelAnimationFrame(sheetTick); sheetTick = requestAnimationFrame(sheetSync); }, { passive: true });
 const sheetGo = i => { const tr = $('shTrack'); tr.scrollTo({ left: i * tr.clientWidth, behavior: 'smooth' }); };
+// на компьютере свайпа нет — стрелки по бокам (видны только при мыши) и клавиши ← →
+$('shL').onclick = () => { if (sheetIdx > 0) sheetGo(sheetIdx - 1); };
+$('shR').onclick = () => { if (sheetIdx < sheetList.length - 1) sheetGo(sheetIdx + 1); };
+document.addEventListener('keydown', e => { if (screenNow !== 'sheet') return; if (e.key === 'ArrowLeft') $('shL').click(); if (e.key === 'ArrowRight') $('shR').click(); });
 $('shNext').onclick = () => {
   if (sheetIdx < sheetList.length - 1) return sheetGo(sheetIdx + 1);
   if (sheetDone) return sheetDone();
