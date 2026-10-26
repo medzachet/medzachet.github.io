@@ -409,3 +409,5 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .rp-fb { min-height: 1.2em; text-align: center; font-size: 14px; font-weight: 700; color: var(--hot); }
 #rep .answer { margin-top: auto; }
 .hd-btn .num { width: 30px; height: 30px; font-size: 14px; } .hd-btn .cnt { font-size: 12px; }
+.rp-done { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
+.rp-done[hidden] { display: none; }

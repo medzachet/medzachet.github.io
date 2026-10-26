@@ -1504,7 +1504,7 @@ const repLabel = t => { $('rpLabel').textContent = t; };
 const repLive = me => rp === me && screenNow === 'rep';
 async function repCard() {
   rp.part = 0; rp.fails = 0; rp.shown = false;
-  $('rpNext').hidden = true;
+  $('rpDone').hidden = true;
   $('rpAnswer').value = ''; $('rpFb').textContent = '';
   repRender();
   const me = rp;
@@ -1541,10 +1541,10 @@ function repCheck() {
     else if (rp.count % 3 === 0) showCheer(REP_POP[Math.floor(Math.random() * REP_POP.length)]);   // пузырь — иногда, как в опросе
     // между определениями — по кнопке; после последнего в разделе — сам к выбору раздела
     speak(REP_SAY[Math.floor(Math.random() * REP_SAY.length)]).then(() => {
-      if (lastOne) setTimeout(() => { if (repLive(me) && me.part >= c.rp.length) { toast(me.scope === 'all' ? 'Все определения пройдены!' : 'Раздел пройден!'); hush(); rp = null; micUI = MIC_QUIZ; openRepPick(me.tid); } }, 1500);
+      if (lastOne) setTimeout(() => { if (repLive(me) && me.part >= c.rp.length && !me.redo) { toast(me.scope === 'all' ? 'Все определения пройдены!' : 'Раздел пройден!'); hush(); rp = null; micUI = MIC_QUIZ; openRepPick(me.tid); } }, 1500);
     });
-    $('rpNext').textContent = lastOne ? (me.scope === 'all' ? '🏆 Все пройдены — к выбору раздела' : '🏁 Раздел пройден — к выбору раздела') : 'Следующее определение →';
-    $('rpNext').hidden = false;
+    $('rpNext').textContent = lastOne ? (me.scope === 'all' ? '🏆 К разделам' : '🏁 К разделам') : 'Следующее →';
+    $('rpDone').hidden = false;
     return;
   }
   rp.fails++;
@@ -1552,6 +1552,8 @@ function repCheck() {
   $('rpAnswer').value = '';
   repPlay();
 }
+// ↻ Ещё раз — пройти это же определение с Мариной заново, сколько нужно
+$('rpRedo').onclick = () => { if (!rp) return; abortListening(); hush(); hideCheer(); rp.redo = true; repCard(); };
 $('rpNext').onclick = () => {
   if (!rp) return;
   if (rp.part >= rp.cards[rp.i].rp.length && rp.i === rp.cards.length - 1) { const t = rp.tid; hush(); rp = null; micUI = MIC_QUIZ; return openRepPick(t); }
