@@ -391,9 +391,9 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .study-nav.eq { grid-template-columns: 1fr 1fr; }
 .pdf-btn { text-decoration: none; font-weight: 700; font-size: 14px; color: var(--c1); padding: 7px 14px; border: 1px solid var(--c1); border-radius: 999px; box-shadow: var(--glow); }
 .sheet-box { position: relative; }
-.sh-arrow { display: none; position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 64px; border-radius: 12px; cursor: pointer;
-  border: 1px solid var(--line); background: rgba(10,16,32,.55); color: #fff; font-size: 34px; line-height: 1; backdrop-filter: blur(6px); }
-.sh-arrow.l { left: 8px; } .sh-arrow.r { right: 8px; }
-.sh-arrow:hover { border-color: var(--c1); box-shadow: var(--glow); }
+.sh-arrow { display: none; position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 72px; padding: 0; cursor: pointer;
+  border: 0; background: none; color: var(--muted); font-size: 46px; font-weight: 300; line-height: 1; opacity: .75; transition: color .15s, opacity .15s; }
+.sh-arrow.l { left: 4px; } .sh-arrow.r { right: 4px; }
+.sh-arrow:hover { color: var(--c1); opacity: 1; }
 @media (hover: hover) and (pointer: fine) { .sh-arrow:not([hidden]) { display: block; } }
 @media (min-width: 700px) { .sh-arrow.l { left: -58px; } .sh-arrow.r { right: -58px; } }   /* на широком экране — за краями картинки */
