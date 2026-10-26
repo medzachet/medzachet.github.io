@@ -38,8 +38,7 @@ const badge = t => (t.hidden ? '💊' : t.strict ? 'Д' : t.id.replace(/^t/, '')
 const CARD = {};
 for (const t of TOPICS) for (const c of t.cards) CARD[c.id] = { ...c, tid: c.tid || t.id, topic: shortName(t), strict: !!t.strict };
 const cardsOf = tid => TOPIC[tid].cards.map(c => CARD[c.id]);
-// Раздел «Определения» проверяется всегда строго
-const modeFor = c => (c && c.strict ? 'exam' : settings.mode);
+const modeFor = () => settings.mode;   // определения: в «Тренировке» — по смыслу (часть пунктов opt), «Перед экзаменом» — строго
 const learnedIn = tid => TOPIC[tid].cards.filter(c => (progress[c.id]?.box || 0) >= 2).length;
 const weakIn = tid => cardsOf(tid).filter(c => progress[c.id] && progress[c.id].seen > 0 && progress[c.id].box === 0);
 
@@ -770,8 +769,9 @@ function showStudy() {
   $('studyScore').textContent = `${i + 1} / ${block.cards.length}`;
   $('studySheet').hidden = !sheetFor(run.tid, c.s);
   $('sTopic').textContent = curBlockLabel();
-  $('sKind').textContent = c.strict ? 'строго' : KIND[c.t];
-  $('sKind').classList.toggle('strict', !!c.strict);
+  const st = c.strict && settings.mode === 'exam';
+  $('sKind').textContent = st ? 'строго' : KIND[c.t];
+  $('sKind').classList.toggle('strict', st);
   $('sQ').textContent = c.q;
   $('sA').innerHTML = c.t === 'list' || !c.a ? `<ul>${c.items.map(x => `<li>${esc(x.t)}</li>`).join('')}</ul>` : markKeys(c);
   $('sDots').innerHTML = block.cards.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
@@ -952,8 +952,9 @@ function showCard(card) {
   attempt = 1; found = new Set(); finished = false; hintLevel = 0; usedHint = false;
   updateScore();
   $('qtopic').textContent = block ? curBlockLabel() : current.drug ? current.s : current.topic;
-  $('qkind').textContent = current.strict ? 'строго' : KIND[current.t];
-  $('qkind').classList.toggle('strict', !!current.strict);
+  const st = current.strict && settings.mode === 'exam';
+  $('qkind').textContent = st ? 'строго' : KIND[current.t];
+  $('qkind').classList.toggle('strict', st);
   $('qtext').textContent = current.q;
   $('answer').value = '';
   $('chips').innerHTML = '';
