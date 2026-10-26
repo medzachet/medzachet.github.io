@@ -82,7 +82,7 @@ function show(screen) {
   if ((screen === 'settings' || screen === 'help') && screenNow !== 'settings' && screenNow !== 'help') screenBefore = screenNow;
   screenNow = screen;
   rememberScreen(screen);
-  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'sheet', 'rep', 'sprav', 'drug', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
+  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'sheet', 'rep', 'repPick', 'sprav', 'drug', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
   window.scrollTo(0, 0);
   if (screen !== 'home' && !hasGuard) { history.pushState({ oz: 1 }, ''); hasGuard = true; }
 }
@@ -105,6 +105,7 @@ function goBack() {
     case 'cardv': return $('cardvBack').click();
     case 'sheet': return $('shBack').click();
     case 'rep': return $('rpBack').click();
+    case 'repPick': return $('rpkBack').click();
     case 'sprav': return $('spBack').click();
     case 'drug': return $('drBack').click();
     case 'topic': case 'unfinished': renderHome(); return show('home');
@@ -218,7 +219,7 @@ $('tCards').onclick = () => {
   if (i < 0) { settings.blocksDone[curTid] = []; saveSettings(); i = 0; }
   openBlock(curTid, i);
 };
-$('tRep').onclick = () => startRep(curTid);
+$('tRep').onclick = () => openRepPick(curTid);
 $('tMix').onclick = () => startRun(curTid, 'mix');
 $('tRand').onclick = () => startRun(curTid, 'rand');
 $('tSeq').onclick = () => startRun(curTid, 'seq');
@@ -1444,10 +1445,30 @@ function repMatch(target, heard) {
   return tw.length <= 3 ? hit === tw.length : hit / tw.length >= 0.8;
 }
 const repTerm = c => c.q.replace(/^\d+\.\s*/, '').replace(/ — дай определение\.$/, '');
-function startRep(tid) {
-  const cards = TOPIC[tid].cards.filter(c => c.rp && c.rp.length).map(c => CARD[c.id]);
+// Место — отдельно для «все» и для каждого раздела: settings.repAt[ключ] = номер определения
+if (typeof settings.repPos === 'number') { settings.repAt = { all: settings.repPos }; delete settings.repPos; saveSettings(); }
+const repAt = () => (settings.repAt = settings.repAt || {});
+const repCards = (tid, scope) => TOPIC[tid].cards.filter(c => c.rp && c.rp.length && (scope === 'all' || c.s === scope)).map(c => CARD[c.id]);
+function openRepPick(tid) {
+  const box = $('rpkList'); box.innerHTML = '';
+  const secs = [...new Set(TOPIC[tid].cards.filter(c => c.rp).map(c => c.s))];
+  for (const scope of ['all', ...secs]) {
+    const n = repCards(tid, scope).length, at = repAt()[scope] || 0;
+    const row = document.createElement('button');
+    row.className = 'sec' + (at ? ' now' : '');
+    row.innerHTML = `<span class="num">${scope === 'all' ? '★' : secs.indexOf(scope) + 1}</span><span class="sname"></span><small></small>`;
+    row.querySelector('.sname').textContent = scope === 'all' ? 'Все определения подряд' : scope;
+    row.querySelector('small').textContent = at ? `с ${at + 1} из ${n}` : n;
+    row.onclick = () => startRep(tid, scope);
+    box.append(row);
+  }
+  show('repPick');
+}
+$('rpkBack').onclick = () => openTopic(READ_TID);
+function startRep(tid, scope = 'all') {
+  const cards = repCards(tid, scope);
   if (!cards.length) return;
-  rp = { tid, cards, i: Math.min(settings.repPos || 0, cards.length - 1), part: 0, fails: 0, shown: false };
+  rp = { tid, scope, cards, i: Math.min(repAt()[scope] || 0, cards.length - 1), part: 0, fails: 0, shown: false, count: 0 };
   abortListening(); hush();
   micUI = MIC_REP;
   show('rep');
@@ -1456,7 +1477,7 @@ function startRep(tid) {
 // shown — текущая часть видна (пока Марина говорит или после двух ошибок); иначе «…» — вспомни сам
 function repRender() {
   const c = rp.cards[rp.i], done = rp.part >= c.rp.length;
-  $('rpPos').textContent = `${rp.i + 1} / ${rp.cards.length}`;
+  $('rpPos').textContent = (rp.scope === 'all' ? '' : rp.scope + ' · ') + `${rp.i + 1} / ${rp.cards.length}`;
   $('rpTerm').textContent = repTerm(c);
   $('rpParts').innerHTML = c.rp.map((p, k) => k < rp.part ? `<span class="done">${esc(p)}</span>`
     : k === rp.part ? (rp.shown ? `<span class="now">${esc(p)}</span>` : '<span class="now hide">вспомни и повтори…</span>')
@@ -1496,11 +1517,18 @@ function repCheck() {
     repRender();
     if (rp.part < c.rp.length) return repPlay();
     // определение целиком
-    settings.repPos = (rp.i + 1) % rp.cards.length; saveSettings();
+    const lastOne = rp.i === rp.cards.length - 1;
+    repAt()[rp.scope] = lastOne ? 0 : rp.i + 1; saveSettings();
+    rp.count++;
     repLabel('');
-    showCheer(REP_POP[Math.floor(Math.random() * REP_POP.length)]);
+    if (lastOne) showCheer(rp.scope === 'all' ? '🏆 Все определения пройдены!' : '🏁 Раздел пройден!');
+    else if (rp.count % 3 === 0) showCheer(REP_POP[Math.floor(Math.random() * REP_POP.length)]);   // пузырь — иногда, как в опросе
     speak(REP_SAY[Math.floor(Math.random() * REP_SAY.length)]).then(() => {
-      setTimeout(() => { if (repLive(me) && me.part >= c.rp.length) repNext(); }, 1200);
+      setTimeout(() => {
+        if (!repLive(me) || me.part < c.rp.length) return;
+        if (lastOne) { toast(me.scope === 'all' ? 'Все определения пройдены — можно начать заново' : 'Раздел пройден!'); return openRepPick(me.tid); }
+        repNext();
+      }, 1200);
     });
     return;
   }
@@ -1509,7 +1537,7 @@ function repCheck() {
   $('rpAnswer').value = '';
   repPlay();
 }
-function repNext() { abortListening(); hush(); hideCheer(); rp.i = (rp.i + 1) % rp.cards.length; repCard(); }
+function repNext() { abortListening(); hush(); rp.i = (rp.i + 1) % rp.cards.length; repAt()[rp.scope] = rp.i; saveSettings(); repCard(); }
 $('rpCheck').onclick = () => { stopListening(); setTimeout(repCheck, rec || finishing ? 600 : 0); };
 $('rpAnswer').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); repCheck(); } });
 $('rpAnswer').addEventListener('input', () => updateMic());
@@ -1524,6 +1552,6 @@ $('rpSkip').onclick = () => {
 bindMic(MIC_REP);
 $('rpBack').onclick = () => {
   abortListening(); hush(); hideCheer();
-  if (rp) { settings.repPos = rp.i; saveSettings(); }
-  const t = rp ? rp.tid : READ_TID; rp = null; micUI = MIC_QUIZ; openTopic(t);
+  if (rp) { repAt()[rp.scope] = rp.i; saveSettings(); }
+  const t = rp ? rp.tid : READ_TID; rp = null; micUI = MIC_QUIZ; openRepPick(t);
 };
