@@ -1559,7 +1559,7 @@ $('rpNext').onclick = () => {
   if (rp.part >= rp.cards[rp.i].rp.length && rp.i === rp.cards.length - 1) { const t = rp.tid; hush(); rp = null; micUI = MIC_QUIZ; return openRepPick(t); }
   repNext();
 };
-function repNext() { abortListening(); hush(); rp.i = (rp.i + 1) % rp.cards.length; repAt()[rp.scope] = rp.i; saveSettings(); repCard(); }
+function repNext() { abortListening(); hush(); rp.redo = false; rp.i = (rp.i + 1) % rp.cards.length; repAt()[rp.scope] = rp.i; saveSettings(); repCard(); }
 $('rpCheck').onclick = () => { stopListening(); setTimeout(repCheck, rec || finishing ? 600 : 0); };
 $('rpAnswer').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); repCheck(); } });
 $('rpAnswer').addEventListener('input', () => updateMic());
