@@ -380,13 +380,17 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .topics-head[aria-expanded="true"] { border-color: var(--c1); }
 
 /* ── Шпаргалки: лента во всю ширину экрана, свайп по слайдам ── */
-.sheet-track { display: flex; margin: 0 -16px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+.sheet-track { display: flex; align-items: flex-start; transition: height .2s ease; margin: 0 -16px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
   scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .sheet-track::-webkit-scrollbar { display: none; }
-.sheet-slide { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; }
+.sheet-slide { flex: 0 0 100%; align-self: flex-start; scroll-snap-align: center; scroll-snap-stop: always; }
 .sheet-slide img { display: block; width: 100%; height: auto; cursor: zoom-in; background: var(--card); min-height: 40vh; }
 .sheet-slide.zoom { max-height: 78vh; overflow: auto; }
 .sheet-slide.zoom img { width: 230%; max-width: none; cursor: zoom-out; }
 @media (min-width: 592px) { .sheet-track { margin: 0; border-radius: 14px; } }
 .study-nav.eq { grid-template-columns: 1fr 1fr; }
-.pdf-btn { font-weight: 700; font-size: 13px; color: var(--c1); text-decoration: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; }
+.sheet-nav { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 8px; }
+.sheet-nav .btn { padding-left: 4px; padding-right: 4px; font-size: 15px; }
+#shPrev, #shNext { font-size: 20px; }
+#shNext.wide-txt { font-size: 15px; }
+.pdf-btn { display: grid; place-items: center; text-decoration: none; font-weight: 700; color: var(--c1); }

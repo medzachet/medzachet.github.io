@@ -697,7 +697,8 @@ function showSheet() {
     const im = document.createElement('img'); im.alt = sh.title; im.decoding = 'async';
     if (Math.abs(k - sheetIdx) > 1) im.loading = 'lazy';
     im.src = sh.f + '?v=' + sheetVer();   // версия — чтобы не показывалась старая картинка из кэша
-    im.onclick = () => d.classList.toggle('zoom');
+    im.onclick = () => { d.classList.toggle('zoom'); sheetFit(); };
+    im.onload = () => { if (k === sheetIdx) sheetFit(); };
     d.append(im); tr.append(d);
   });
   // PDF всех шпаргалок темы (tools/make_sheet_pdfs.py)
@@ -719,9 +720,14 @@ function sheetSync() {
   $('shPos').textContent = sheetList.length > 1 ? `${i + 1} / ${sheetList.length}` : '';
   $('shPrev').disabled = i === 0;
   const last = i === sheetList.length - 1;
-  $('shNext').textContent = last ? (sheetDone ? 'К карточкам ▶' : 'Готово') : 'Дальше →';
+  $('shNext').textContent = last ? (sheetDone ? 'Дальше ▶' : 'Готово') : '→';   // на последней — к карточкам или обратно
+  $('shNext').classList.toggle('wide-txt', last);
   for (const j of [i - 1, i + 1]) { const im = tr.children[j] && tr.children[j].firstChild; if (im) im.loading = 'eager'; }
+  sheetFit();
 }
+// высота ленты — по текущей картинке (иначе под короткими остаётся пустота до самой высокой)
+function sheetFit() { const sl = $('shTrack').children[sheetIdx]; if (sl) $('shTrack').style.height = sl.offsetHeight + 'px'; }
+window.addEventListener('resize', () => { if (screenNow === 'sheet') sheetFit(); });
 let sheetTick = 0;
 $('shTrack').addEventListener('scroll', () => { cancelAnimationFrame(sheetTick); sheetTick = requestAnimationFrame(sheetSync); }, { passive: true });
 const sheetGo = i => { const tr = $('shTrack'); tr.scrollTo({ left: i * tr.clientWidth, behavior: 'smooth' }); };
