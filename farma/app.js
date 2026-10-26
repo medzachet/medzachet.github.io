@@ -7,8 +7,10 @@ function load(key, def) { try { return JSON.parse(localStorage.getItem(key)) ?? 
 function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
 function drop(key) { try { localStorage.removeItem(key); } catch {} }
 
-const settings = Object.assign({ mode: 'train', voice: '', rate: 1, speak: true, marina: true, theme: 'system', seqPos: {}, blocksDone: {}, randSeen: {} },
+const settings = Object.assign({ mode: 'train', voice: '', rate: 1, speak: true, marina: true, theme: 'dark', seqPos: {}, blocksDone: {}, randSeen: {} },
   load('oz.settings', {}));
+// тема по умолчанию — тёмная (2026-10-26); тем, у кого стояло «Авто», переключаем один раз
+if (settings.themeVer !== 1) { settings.themeVer = 1; if (settings.theme === 'system') settings.theme = 'dark'; save('oz.settings', settings); }
 const progress = load('oz.progress', {}); // cardId → { box, seen, ok }
 if (settings.blocksVer !== 4) {
   settings.blocksVer = 4; settings.blocksDone = {};
