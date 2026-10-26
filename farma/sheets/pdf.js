@@ -1,0 +1,2 @@
+// PDF шпаргалок по темам (для печати) — tools/make_sheet_pdfs.py. Не править руками.
+window.SHEET_PDF = {t01: 'sheets/pdf/t01.pdf', t02: 'sheets/pdf/t02.pdf', t03: 'sheets/pdf/t03.pdf', t04: 'sheets/pdf/t04.pdf', t05: 'sheets/pdf/t05.pdf', t06: 'sheets/pdf/t06.pdf', t07: 'sheets/pdf/t07.pdf', t08: 'sheets/pdf/t08.pdf', t09: 'sheets/pdf/t09.pdf', t10: 'sheets/pdf/t10.pdf', t11: 'sheets/pdf/t11.pdf'};

@@ -314,10 +314,6 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .speak-tog { margin-left: auto; }
 .flag { opacity: .7; }
 .flag-s { align-self: flex-end; margin-top: 4px; }
-.sheet-wrap { padding: 6px; border-radius: 18px; overflow: auto; -webkit-overflow-scrolling: touch; }
-.sheet-wrap img { display: block; width: 100%; height: auto; border-radius: 12px; }
-.sheet-wrap.zoom { max-height: 78vh; }
-.sheet-wrap.zoom img { width: 230%; max-width: none; }
 .hint.center { text-align: center; }
 
 /* ── Справочник препаратов ── */
@@ -369,3 +365,28 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
   background: var(--card); border: 1px solid var(--line); color: var(--muted); }
 .sp-fold button[aria-checked="true"] { color: var(--c1); border-color: var(--c1); }
 .sp-topic.sp-abc { padding: 6px 12px; border-radius: 11px; }
+
+/* ── Главная: препараты + справочник, раскрывающиеся темы ── */
+.home-drugs { display: grid; grid-template-columns: 1.25fr 1fr; gap: 9px; }
+.hd-btn { display: flex; align-items: center; gap: 10px; padding: 12px; cursor: pointer; appearance: none; text-align: left; color: var(--ink); min-width: 0; }
+.hd-btn .num { border-color: var(--hot); box-shadow: 0 0 12px rgba(255,138,61,.4); font-size: 15px; }
+.hd-btn .tname { flex: 1; min-width: 0; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hd-btn.sp .num { border-color: var(--c2); box-shadow: 0 0 12px rgba(155,124,255,.35); }
+.topics-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; appearance: none; cursor: pointer;
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px; color: var(--ink); }
+.topics-head .label { flex: 1; text-align: left; font-size: 12px; color: var(--ink); }
+.topics-head .chev { font-size: 22px; line-height: 1; color: var(--muted); transition: transform .2s; }
+.topics-head[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.topics-head[aria-expanded="true"] { border-color: var(--c1); }
+
+/* ── Шпаргалки: лента во всю ширину экрана, свайп по слайдам ── */
+.sheet-track { display: flex; margin: 0 -16px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.sheet-track::-webkit-scrollbar { display: none; }
+.sheet-slide { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; }
+.sheet-slide img { display: block; width: 100%; height: auto; cursor: zoom-in; background: var(--card); min-height: 40vh; }
+.sheet-slide.zoom { max-height: 78vh; overflow: auto; }
+.sheet-slide.zoom img { width: 230%; max-width: none; cursor: zoom-out; }
+@media (min-width: 592px) { .sheet-track { margin: 0; border-radius: 14px; } }
+.study-nav.eq { grid-template-columns: 1fr 1fr; }
+.pdf-btn { font-weight: 700; font-size: 13px; color: var(--c1); text-decoration: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; }

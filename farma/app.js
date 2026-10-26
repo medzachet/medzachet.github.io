@@ -132,37 +132,36 @@ function plural(n, one, few, many) {
 const shortDate = ts => { const d = new Date(ts); return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`; };
 
 // ── Главный ──
+// Главная: препараты и справочник — наверху, затем определения, темы — раскрывающимся списком (состояние запоминается)
+let topicsOpen = load('oz.topicsOpen', false);
+function topicRow(t) {
+  const n = t.cards.length, l = learnedIn(t.id);
+  const b = document.createElement('button');
+  b.className = 'glass topic';
+  b.innerHTML = `<span class="num"></span><span class="tbody"><span class="tname"></span><span class="bar"><i style="width:${Math.round(l / n * 100)}%"></i></span></span><span class="cnt">${l}/${n}</span>`;
+  b.querySelector('.num').textContent = badge(t);
+  b.querySelector('.tname').textContent = shortName(t);
+  b.onclick = () => openTopic(t.id);
+  return b;
+}
 function renderHome() {
-  const box = $('topics'); box.innerHTML = '';
-  for (const t of TOPICS) {
-    if (t.hidden) continue;
-    const n = t.cards.length, l = learnedIn(t.id);
-    const b = document.createElement('button');
-    b.className = 'glass topic';
-    b.innerHTML = `<span class="num"></span><span class="tbody"><span class="tname"></span><span class="bar"><i style="width:${Math.round(l / n * 100)}%"></i></span></span><span class="cnt">${l}/${n}</span>`;
-    b.querySelector('.num').textContent = badge(t);
-    b.querySelector('.tname').textContent = shortName(t);
-    b.onclick = () => openTopic(t.id);
-    box.append(b);
-  }
-  if (TOPIC.drugs) {
-    const b = document.createElement('button');
-    b.className = 'glass topic drugs-entry';
-    b.innerHTML = `<span class="num">💊</span><span class="tbody"><span class="tname">Препараты · все темы</span></span><span class="cnt">${drugNames('all').length}</span>`;
-    b.onclick = () => openDrugs('all');
-    box.append(b);
-    const sp = document.createElement('button');
-    sp.className = 'glass topic drugs-entry';
-    sp.innerHTML = `<span class="num">📚</span><span class="tbody"><span class="tname">Справочник препаратов</span></span><span class="cnt">›</span>`;
-    sp.onclick = () => openSprav();
-    box.append(sp);
-  }
+  const box = $('topics'), def = $('hDef'); box.innerHTML = ''; def.innerHTML = '';
+  const list = TOPICS.filter(t => !t.hidden);
+  for (const t of list) (t.strict ? def : box).append(topicRow(t));
+  $('topicsN').textContent = list.filter(t => !t.strict).length;
+  box.hidden = !topicsOpen;
+  $('topicsHead').setAttribute('aria-expanded', topicsOpen);
+  $('hDrugs').parentNode.hidden = !TOPIC.drugs;
+  if (TOPIC.drugs) $('hDrugsN').textContent = drugNames('all').length;
   renderResume();
   $('noSpeech').hidden = !!Recognition;
   $('inApp').hidden = !IN_APP || load('oz.inAppHidden', false);
 }
 // Встроенный браузер (Телеграм, ВК, Инстаграм): «Назад» телефона закрывает его целиком
 const IN_APP = /; wv\)|Telegram|Instagram|FBAN|FBAV|VKAndroidApp|vkclient/i.test(navigator.userAgent);
+$('topicsHead').onclick = () => { topicsOpen = !topicsOpen; save('oz.topicsOpen', topicsOpen); renderHome(); };
+$('hDrugs').onclick = () => openDrugs('all');
+$('hSprav').onclick = () => openSprav();
 $('inAppClose').onclick = () => { save('oz.inAppHidden', true); $('inApp').hidden = true; };
 
 // ── Тема ──
@@ -688,22 +687,47 @@ function openSheets(list, idx, done, back) {
   abortListening(); hush();
   showSheet();
 }
+// Шпаргалки листаются свайпом: все картинки списка в ленте со «щелчком» по слайду, соседние грузятся заранее
+const sheetVer = () => document.getElementById('verLine').textContent.replace(/\D/g, '') || '0';
 function showSheet() {
-  const sh = sheetList[sheetIdx];
-  $('shTitle').textContent = sh.title;
-  $('shPos').textContent = sheetList.length > 1 ? `${sheetIdx + 1} / ${sheetList.length}` : '';
-  $('shImg').src = sh.f + '?v=' + ($('verLine').textContent.replace(/\D/g, '') || '0');   // версия — чтобы не показывалась старая картинка из кэша
-  $('shImg').alt = sh.title;
-  $('shWrap').classList.remove('zoom');
-  $('shPrev').disabled = sheetIdx === 0;
-  const last = sheetIdx === sheetList.length - 1;
-  $('shNext').textContent = last ? (sheetDone ? 'К карточкам ▶' : 'Готово') : 'Дальше →';
+  const tr = $('shTrack');
+  tr.innerHTML = '';
+  sheetList.forEach((sh, k) => {
+    const d = document.createElement('div'); d.className = 'sheet-slide';
+    const im = document.createElement('img'); im.alt = sh.title; im.decoding = 'async';
+    if (Math.abs(k - sheetIdx) > 1) im.loading = 'lazy';
+    im.src = sh.f + '?v=' + sheetVer();   // версия — чтобы не показывалась старая картинка из кэша
+    im.onclick = () => d.classList.toggle('zoom');
+    d.append(im); tr.append(d);
+  });
+  // PDF всех шпаргалок темы (tools/make_sheet_pdfs.py)
+  const tid = (sheetList[0].f.match(/sheets\/(t\d+)\//) || [])[1];
+  const pdf = tid && (window.SHEET_PDF || {})[tid];
+  $('shPdf').hidden = !pdf;
+  if (pdf) { $('shPdf').href = pdf + '?v=' + sheetVer(); $('shPdf').setAttribute('download', `Шпаргалки ${tid.slice(1)} — ${shortName(TOPIC[tid])}.pdf`); }
   show('sheet');
+  tr.scrollLeft = sheetIdx * tr.clientWidth;
+  sheetSync();
 }
-$('shImg').onclick = () => $('shWrap').classList.toggle('zoom');
-$('shPrev').onclick = () => { if (sheetIdx > 0) { sheetIdx--; showSheet(); } };
+function sheetSync() {
+  const tr = $('shTrack'), k = Math.round(tr.scrollLeft / Math.max(1, tr.clientWidth));
+  const i = Math.max(0, Math.min(sheetList.length - 1, k));
+  if (i !== sheetIdx) tr.children[sheetIdx] && tr.children[sheetIdx].classList.remove('zoom');
+  sheetIdx = i;
+  const sh = sheetList[i];
+  $('shTitle').textContent = sh.title;
+  $('shPos').textContent = sheetList.length > 1 ? `${i + 1} / ${sheetList.length}` : '';
+  $('shPrev').disabled = i === 0;
+  const last = i === sheetList.length - 1;
+  $('shNext').textContent = last ? (sheetDone ? 'К карточкам ▶' : 'Готово') : 'Дальше →';
+  for (const j of [i - 1, i + 1]) { const im = tr.children[j] && tr.children[j].firstChild; if (im) im.loading = 'eager'; }
+}
+let sheetTick = 0;
+$('shTrack').addEventListener('scroll', () => { cancelAnimationFrame(sheetTick); sheetTick = requestAnimationFrame(sheetSync); }, { passive: true });
+const sheetGo = i => { const tr = $('shTrack'); tr.scrollTo({ left: i * tr.clientWidth, behavior: 'smooth' }); };
+$('shPrev').onclick = () => { if (sheetIdx > 0) sheetGo(sheetIdx - 1); };
 $('shNext').onclick = () => {
-  if (sheetIdx < sheetList.length - 1) { sheetIdx++; return showSheet(); }
+  if (sheetIdx < sheetList.length - 1) return sheetGo(sheetIdx + 1);
   if (sheetDone) return sheetDone();
   sheetBack();
 };
