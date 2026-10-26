@@ -10,10 +10,8 @@
   <link rel="apple-touch-icon" href="farma/icon-192.png">
   <link rel="stylesheet" href="farma/fonts/fonts-local.css">
   <style>
-    :root { --bg: #eef2fc; --card: rgba(255,255,255,.78); --line: rgba(70,90,180,.16); --ink: #141a33; --muted: #5d6789;
-      --c1: #0a8fc4; --c2: #7547e6; --dot1: rgba(10,143,196,.35); --dot2: rgba(117,71,230,.30); color-scheme: light; }
-    @media (prefers-color-scheme: dark) { :root { --bg: #070b1a; --card: rgba(22,34,72,.55); --line: rgba(120,170,255,.2);
-      --ink: #eaf2ff; --muted: #8fa3c9; --c1: #4fd8ff; --c2: #9b6bff; --dot1: rgba(79,216,255,.55); --dot2: rgba(155,107,255,.5); color-scheme: dark; } }
+    /* тёмная тема — всегда (как в приложении по умолчанию) */
+    :root { --bg: #070b1a; --card: rgba(22,34,72,.55); --line: rgba(120,170,255,.2); --ink: #eaf2ff; --muted: #8fa3c9; --c1: #4fd8ff; --c2: #9b6bff; --dot1: rgba(79,216,255,.55); --dot2: rgba(155,107,255,.5); color-scheme: dark; }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--ink); font: 16px/1.45 Manrope, system-ui, sans-serif; }
     .dots { position: fixed; inset: 0; pointer-events: none;

@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=58">
+  <link rel="stylesheet" href="style.css?v=59">
 </head>
 <body>
   <div class="bg-dots" aria-hidden="true"></div>
@@ -49,6 +49,7 @@
     <div id="tResumes" class="resumes"></div>
     <div class="acts">
       <button id="tCards" class="act main"></button>
+      <button id="tRep" class="act wide rep-act" hidden>🗣 Повторяй за Мариной<small>по частям, вслух</small></button>
       <button id="tMix" class="act">Микс</button>
       <button id="tSeq" class="act">По лекции</button>
       <button id="tErr" class="act">Ошибки</button>
@@ -120,7 +121,7 @@
       <div class="seg"><button data-theme-set="light">Светлая</button><button data-theme-set="dark">Тёмная</button><button data-theme-set="system">Авто</button></div>
     </section>
     <button class="text-btn small help-link" data-help>? Справочник</button>
-    <p id="verLine" class="ver">версия 58</p>
+    <p id="verLine" class="ver">версия 59</p>
     <p class="disclaimer">Учебный тренажёр по лекциям колледжа. Не медицинская рекомендация — не используй его для подбора лечения.</p>
   </main>
 
@@ -189,6 +190,22 @@
       <button id="drPrev" class="btn">← Назад</button>
       <button id="drNext" class="btn primary">Дальше →</button>
     </div>
+  </main>
+
+  <!-- Повторяй за Мариной (определения по частям) -->
+  <main id="rep" class="screen" hidden>
+    <header class="row"><button id="rpBack" class="text-btn">← Назад</button><span id="rpPos" class="label"></span></header>
+    <h2 id="rpTerm"></h2>
+    <div id="rpParts" class="glass rp-parts"></div>
+    <p id="rpHeard" class="rp-heard"></p>
+    <div class="controls">
+      <button id="rpAgain" class="side-btn"><span class="ico">🔁</span><span>Послушать</span></button>
+      <button id="rpMic" class="mic" aria-label="Повторить вслух">
+        <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+      <button id="rpSkip" class="side-btn"><span class="ico">⏭</span><span>Пропустить</span></button>
+    </div>
+    <div id="rpLabel" class="mic-label"></div>
   </main>
 
   <!-- Шпаргалка (картинка) -->
@@ -304,27 +321,27 @@
     </div>
   </main>
 
-  <script src="bank/_core.js?v=58"></script>
-  <script src="bank/vocab.js?v=58"></script>
-  <script src="bank/farm_def.js?v=58"></script>
-  <script src="bank/farm_t01.js?v=58"></script>
-  <script src="bank/farm_t02.js?v=58"></script>
-  <script src="bank/farm_t03.js?v=58"></script>
-  <script src="bank/farm_t04.js?v=58"></script>
-  <script src="bank/farm_t05.js?v=58"></script>
-  <script src="bank/farm_t06.js?v=58"></script>
-  <script src="bank/farm_t07.js?v=58"></script>
-  <script src="bank/farm_t08.js?v=58"></script>
-  <script src="bank/farm_t09.js?v=58"></script>
-  <script src="bank/farm_t10.js?v=58"></script>
-  <script src="bank/farm_t11.js?v=58"></script>
-  <script src="bank/farm_drugs.js?v=58"></script>
-  <script src="checker.js?v=58"></script>
-  <script src="cheers.js?v=58"></script>
-  <script src="sheets/index.js?v=58"></script>
-  <script src="sheets/pdf.js?v=58"></script>
-  <script src="speechtext.js?v=58"></script>
-  <script src="audio/index.js?v=58"></script>
-  <script src="app.js?v=58"></script>
+  <script src="bank/_core.js?v=59"></script>
+  <script src="bank/vocab.js?v=59"></script>
+  <script src="bank/farm_def.js?v=59"></script>
+  <script src="bank/farm_t01.js?v=59"></script>
+  <script src="bank/farm_t02.js?v=59"></script>
+  <script src="bank/farm_t03.js?v=59"></script>
+  <script src="bank/farm_t04.js?v=59"></script>
+  <script src="bank/farm_t05.js?v=59"></script>
+  <script src="bank/farm_t06.js?v=59"></script>
+  <script src="bank/farm_t07.js?v=59"></script>
+  <script src="bank/farm_t08.js?v=59"></script>
+  <script src="bank/farm_t09.js?v=59"></script>
+  <script src="bank/farm_t10.js?v=59"></script>
+  <script src="bank/farm_t11.js?v=59"></script>
+  <script src="bank/farm_drugs.js?v=59"></script>
+  <script src="checker.js?v=59"></script>
+  <script src="cheers.js?v=59"></script>
+  <script src="sheets/index.js?v=59"></script>
+  <script src="sheets/pdf.js?v=59"></script>
+  <script src="speechtext.js?v=59"></script>
+  <script src="audio/index.js?v=59"></script>
+  <script src="app.js?v=59"></script>
 </body>
 </html>

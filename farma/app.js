@@ -82,7 +82,7 @@ function show(screen) {
   if ((screen === 'settings' || screen === 'help') && screenNow !== 'settings' && screenNow !== 'help') screenBefore = screenNow;
   screenNow = screen;
   rememberScreen(screen);
-  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'sheet', 'sprav', 'drug', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
+  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'sheet', 'rep', 'sprav', 'drug', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
   window.scrollTo(0, 0);
   if (screen !== 'home' && !hasGuard) { history.pushState({ oz: 1 }, ''); hasGuard = true; }
 }
@@ -104,6 +104,7 @@ function goBack() {
     case 'help': return $('helpBack').click();
     case 'cardv': return $('cardvBack').click();
     case 'sheet': return $('shBack').click();
+    case 'rep': return $('rpBack').click();
     case 'sprav': return $('spBack').click();
     case 'drug': return $('drBack').click();
     case 'topic': case 'unfinished': renderHome(); return show('home');
@@ -175,6 +176,7 @@ function renderTopic() {
   $('tRing').style.setProperty('--p', `${Math.round(l / n * 100)}%`);
   $('tRingNum').textContent = l;
   const bl = topicBlocks(curTid), cur = firstNotDone(curTid);
+  $('tRep').hidden = curTid !== READ_TID;
   if (curTid === READ_TID) $('tCards').innerHTML = `▶ Все определения подряд<small>${loadSessions()[`${READ_TID}:read`] ? 'продолжить чтение' : `${n} карточек · без опроса`}</small>`;
   else $('tCards').innerHTML = cur >= 0
     ? `▶ Карточки<small>${esc(blockLabel(bl[cur]))}</small>`
@@ -216,6 +218,7 @@ $('tCards').onclick = () => {
   if (i < 0) { settings.blocksDone[curTid] = []; saveSettings(); i = 0; }
   openBlock(curTid, i);
 };
+$('tRep').onclick = () => startRep(curTid);
 $('tMix').onclick = () => startRun(curTid, 'mix');
 $('tRand').onclick = () => startRun(curTid, 'rand');
 $('tSeq').onclick = () => startRun(curTid, 'seq');
@@ -1402,3 +1405,113 @@ updateMic();
 renderHome();
 if (!(location.hash.startsWith('#card=') && openCardView(decodeURIComponent(location.hash.slice(6))))) restoreScreen();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+
+// ── Повторяй за Мариной: определение по смысловым кускам (поле rp). Марина говорит кусок — повторяешь вслух — дальше ──
+const REP_OK = ['Молодец, принято!', 'Отлично, принято!', 'Йюху! Принято.', 'Умница, принято!'];
+let rp = null;   // { tid, cards, i, part, fails, r }
+const repNorm = t => (t || '').toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+function repLev(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+// засчитано, если узнаны почти все значимые слова куска (короткие куски — все); окончания и ослышки прощаются
+function repMatch(target, heard) {
+  const tw = repNorm(target).filter(w => w.length >= 3);
+  const hw = repNorm(Checker.correctTerms(heard, window.VOCAB));
+  if (!tw.length) return hw.length > 0;
+  const hit = tw.filter(w => {
+    const st = w.slice(0, Math.min(6, Math.max(3, w.length - 2)));
+    return hw.some(h => h.startsWith(st) || (w.length >= 6 && repLev(h.slice(0, st.length), st) <= 1));
+  }).length;
+  return tw.length <= 3 ? hit === tw.length : hit / tw.length >= 0.8;
+}
+const repTerm = c => c.q.replace(/^\d+\.\s*/, '').replace(/ — дай определение\.$/, '');
+function startRep(tid) {
+  const cards = TOPIC[tid].cards.filter(c => c.rp && c.rp.length).map(c => CARD[c.id]);
+  if (!cards.length) return;
+  rp = { tid, cards, i: Math.min(settings.repPos || 0, cards.length - 1), part: 0, fails: 0, r: null };
+  abortListening(); hush();
+  show('rep');
+  repCard(true);
+}
+function repRender() {
+  const c = rp.cards[rp.i];
+  $('rpPos').textContent = `${rp.i + 1} / ${rp.cards.length}`;
+  $('rpTerm').textContent = repTerm(c);
+  $('rpParts').innerHTML = c.rp.map((p, k) => k < rp.part ? `<span class="done">${esc(p)}</span>` : k === rp.part ? `<span class="now">${esc(p)}</span>` : '<span class="later">…</span>').join(' ');
+  $('rpSkip').querySelector('span:last-child').textContent = rp.part >= c.rp.length ? 'Следующее' : 'Пропустить';
+}
+const repLabel = t => { $('rpLabel').textContent = t; };
+const repLive = me => rp === me && screenNow === 'rep';
+async function repCard(first) {
+  rp.part = 0; rp.fails = 0; $('rpHeard').textContent = '';
+  repRender();
+  const me = rp;
+  if (first) await speak('Повторяй за мной.');
+  if (!repLive(me)) return;
+  await speak(repTerm(rp.cards[rp.i]) + '.');
+  if (!repLive(me)) return;
+  repPlay();
+}
+async function repPlay() {
+  const me = rp, c = rp.cards[rp.i], part = rp.part;
+  repRender(); repStop();
+  $('rpHeard').textContent = '';
+  repLabel('Слушай…');
+  await speak(c.rp[part]);
+  if (!repLive(me) || me.part !== part) return;
+  repListen();
+}
+function repStop() { if (rp && rp.r) { const r = rp.r; rp.r = null; try { r.abort(); } catch {} } $('rpMic').classList.remove('on'); }
+function repListen() {
+  if (!Recognition) { repLabel('Голос недоступен — повтори вслух и нажми ⏭'); return; }
+  repStop(); hush();
+  const r = new Recognition(), me = rp, part = rp.part;
+  let heard = '';
+  rp.r = r;
+  r.lang = 'ru-RU'; r.continuous = false; r.interimResults = true;
+  r.onresult = e => { heard = mergeResults(e.results); $('rpHeard').textContent = heard; };
+  r.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') repLabel('Разреши микрофон для этой страницы'); };
+  r.onend = () => {
+    if (rp !== me || me.r !== r) return;
+    me.r = null; $('rpMic').classList.remove('on');
+    if (!heard) return repLabel('Не услышала — нажми на микрофон и повтори');
+    if (repMatch(me.cards[me.i].rp[part], heard)) return repAccept();
+    me.fails++;
+    repLabel(me.fails >= 3 ? 'Не получается? Можно пропустить ⏭' : 'Ещё раз');
+    speak('Ещё раз.').then(() => { if (repLive(me) && me.part === part) repPlay(); });
+  };
+  try { r.start(); $('rpMic').classList.add('on'); repLabel('Повтори вслух'); } catch { rp.r = null; }
+}
+async function repAccept() {
+  const me = rp, c = rp.cards[rp.i];
+  rp.part++; rp.fails = 0;
+  repRender();
+  if (rp.part < c.rp.length) return repPlay();
+  // всё определение повторено
+  settings.repPos = (rp.i + 1) % rp.cards.length; saveSettings();
+  repLabel('Принято! ✓');
+  await speak(REP_OK[Math.floor(Math.random() * REP_OK.length)]);
+  if (!repLive(me)) return;
+  setTimeout(() => { if (repLive(me) && me.part >= c.rp.length) repNext(); }, 900);
+}
+function repNext() { repStop(); hush(); rp.i = (rp.i + 1) % rp.cards.length; repCard(false); }
+$('rpMic').onclick = () => {
+  if (!rp) return;
+  if (rp.r) { repStop(); return repLabel('Остановлено — нажми, чтобы повторить'); }
+  if (rp.part >= rp.cards[rp.i].rp.length) return repNext();
+  repListen();
+};
+$('rpAgain').onclick = () => { if (!rp) return; if (rp.part >= rp.cards[rp.i].rp.length) rp.part = 0; repPlay(); };
+$('rpSkip').onclick = () => {
+  if (!rp) return;
+  if (rp.part < rp.cards[rp.i].rp.length - 1) { rp.part++; rp.fails = 0; return repPlay(); }
+  repNext();
+};
+$('rpBack').onclick = () => {
+  if (rp) { repStop(); settings.repPos = rp.i; saveSettings(); }
+  hush();
+  const t = rp ? rp.tid : READ_TID; rp = null; openTopic(t);
+};
