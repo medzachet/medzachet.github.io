@@ -923,6 +923,7 @@ function resumeSession(key, from, direct) {
 }
 
 // ── Ход опроса ──
+const MAX_TRIES = 3;   // ответ + две попытки «подумай ещё»
 let attempt = 1, found = new Set(), finished = false, hintLevel = 0, usedHint = false;
 
 function nextCard() {
@@ -1111,21 +1112,22 @@ function submit() {
 
   if (done) return finish(true, missing);
 
-  if (attempt === 1) {
-    attempt = 2;
+  if (attempt < MAX_TRIES) {   // две попытки «подумай ещё», потом итог
+    attempt++;
+    const lastTry = attempt === MAX_TRIES, again = lastTry ? 'Подумай ещё раз — последняя попытка.' : 'Подумай ещё.';
     let title, speech;
     if (current.t === 'list') {
       title = got ? `Назвала ${got} из ${need}` : 'Пока не то';
-      speech = got ? `Назвала ${got} из ${need}. Вспомни ещё ${left}.` : 'Подумай ещё.';
-      showFeedback('warn', title, `<p>${got ? `Вспомни ещё ${left} ${plural(left, 'пункт', 'пункта', 'пунктов')}.` : 'Подумай ещё.'}</p>`);
+      speech = got ? `Назвала ${got} из ${need}. Вспомни ещё ${left}.` : again;
+      showFeedback('warn', title, `<p>${got ? `Вспомни ещё ${left} ${plural(left, 'пункт', 'пункта', 'пунктов')}.` : again}${got && lastTry ? ' Последняя попытка.' : ''}</p>`);
     } else if (current.t === 'def') {
       title = got ? 'Не совсем точно' : 'Неверно';
-      speech = 'Не совсем точно. Подумай ещё.';
-      showFeedback('warn', title, `<p>Не хватает ${left} ${plural(left, 'элемента', 'элементов', 'элементов')} определения.</p>`);
+      speech = 'Не совсем точно. ' + again;
+      showFeedback('warn', title, `<p>Не хватает ${left} ${plural(left, 'элемента', 'элементов', 'элементов')} определения. ${again}</p>`);
     } else {
       title = got ? 'Почти' : 'Неверно';
-      speech = got ? 'Почти. Подумай ещё.' : 'Неверно. Подумай ещё.';
-      showFeedback('warn', title, '<p>Подумай ещё.</p>');
+      speech = (got ? 'Почти. ' : 'Неверно. ') + again;
+      showFeedback('warn', title, `<p>${again}</p>`);
     }
     renderChips(missing, left);
     $('answer').value = '';
@@ -1245,7 +1247,7 @@ function finish(ok, missing = [], gaveUp = false) {
   $('next').textContent = lastOfDrug ? '🎲 Следующий препарат' : 'Дальше';
 
   if (ok) {
-    const title = usedHint ? 'Верно, с подсказкой' : attempt === 1 ? 'Верно!' : 'Верно, со второй попытки';
+    const title = usedHint ? 'Верно, с подсказкой' : attempt === 1 ? 'Верно!' : attempt === 2 ? 'Верно, со второй попытки' : 'Верно, с третьей попытки';
     showFeedback('ok', title, current.a ? refBlock() : '');
     say('Верно!');
     return;
