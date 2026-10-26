@@ -41,6 +41,12 @@ const CARD = {};
 for (const t of TOPICS) for (const c of t.cards) CARD[c.id] = { ...c, tid: c.tid || t.id, topic: shortName(t), strict: !!t.strict };
 const cardsOf = tid => TOPIC[tid].cards.map(c => CARD[c.id]);
 const modeFor = () => settings.mode;   // определения: в «Тренировке» — по смыслу (часть пунктов opt), «Перед экзаменом» — строго
+// Состояние вопроса: 2 — выучено (дважды сразу верно), 1 — один раз верно, -1 — ошибка, 0 — ещё не отвечал(а)
+const cardState = id => { const p = progress[id]; if (!p || !p.seen) return 0; if (p.box >= 2) return 2; if (p.box >= 1) return 1; return -1; };
+const MARK = { 2: '✓✓', 1: '✓', '-1': '✗', 0: '○' };
+const onceIn = tid => TOPIC[tid].cards.filter(c => cardState(c.id) === 1).length;
+// двухслойная полоска: бледное — один раз, яркое — выучено
+const bar2 = (l, o, n) => `<span class="bar"><b style="width:${Math.round((l + o) / n * 100)}%"></b><i style="width:${Math.round(l / n * 100)}%"></i></span>`;
 const learnedIn = tid => TOPIC[tid].cards.filter(c => (progress[c.id]?.box || 0) >= 2).length;
 const weakIn = tid => cardsOf(tid).filter(c => progress[c.id] && progress[c.id].seen > 0 && progress[c.id].box === 0);
 
@@ -82,7 +88,7 @@ function show(screen) {
   if ((screen === 'settings' || screen === 'help') && screenNow !== 'settings' && screenNow !== 'help') screenBefore = screenNow;
   screenNow = screen;
   rememberScreen(screen);
-  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'sheet', 'rep', 'repPick', 'sprav', 'drug', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
+  for (const s of ['home', 'topic', 'unfinished', 'drugsScr', 'ready', 'settings', 'help', 'cardv', 'sheet', 'rep', 'repPick', 'prog', 'sprav', 'drug', 'study', 'quiz', 'results']) $(s).hidden = s !== screen;
   window.scrollTo(0, 0);
   if (screen !== 'home' && !hasGuard) { history.pushState({ oz: 1 }, ''); hasGuard = true; }
 }
@@ -106,6 +112,7 @@ function goBack() {
     case 'sheet': return $('shBack').click();
     case 'rep': return $('rpBack').click();
     case 'repPick': return $('rpkBack').click();
+    case 'prog': return $('pgBack').click();
     case 'sprav': return $('spBack').click();
     case 'drug': return $('drBack').click();
     case 'topic': case 'unfinished': renderHome(); return show('home');
@@ -138,10 +145,10 @@ const shortDate = ts => { const d = new Date(ts); return `${String(d.getDate()).
 // Главная: препараты и справочник — наверху, затем определения, темы — раскрывающимся списком (состояние запоминается)
 let topicsOpen = load('oz.topicsOpen', false);
 function topicRow(t) {
-  const n = t.cards.length, l = learnedIn(t.id);
+  const n = t.cards.length, l = learnedIn(t.id), o = onceIn(t.id);
   const b = document.createElement('button');
   b.className = 'glass topic';
-  b.innerHTML = `<span class="num"></span><span class="tbody"><span class="tname"></span><span class="bar"><i style="width:${Math.round(l / n * 100)}%"></i></span></span><span class="cnt">${l}/${n}</span>`;
+  b.innerHTML = `<span class="num"></span><span class="tbody"><span class="tname"></span>${bar2(l, o, n)}</span><span class="cnt">${l}/${n}</span>`;
   b.querySelector('.num').textContent = badge(t);
   b.querySelector('.tname').textContent = shortName(t);
   b.onclick = () => openTopic(t.id);
@@ -173,8 +180,10 @@ function openTopic(tid) { curTid = tid; renderTopic(); show('topic'); }
 function renderTopic() {
   const t = TOPIC[curTid], n = t.cards.length, l = learnedIn(curTid);
   $('tName').textContent = shortName(t);
-  $('tSub').textContent = `${l} из ${n} выучено`;
+  const o = onceIn(curTid);
+  $('tSub').innerHTML = `${l} из ${n} выучено` + (o ? ` · <span class="once">${o} — один раз</span>` : '');
   $('tRing').style.setProperty('--p', `${Math.round(l / n * 100)}%`);
+  $('tRing').style.setProperty('--p1', `${Math.round((l + o) / n * 100)}%`);
   $('tRingNum').textContent = l;
   const bl = topicBlocks(curTid), cur = firstNotDone(curTid);
   $('tRep').hidden = curTid !== READ_TID;
@@ -195,8 +204,9 @@ function renderTopic() {
     const done = s.idx.every(i => d.has(i)), now = s.idx.includes(cur);
     const row = document.createElement('button');
     row.className = 'sec' + (done ? ' done' : '') + (now ? ' now' : '');
-    row.innerHTML = `<span class="num">${done ? '✓' : k + 1}</span><span class="sname"></span><small>${s.count}</small>`;
-    row.querySelector('.sname').textContent = s.name;
+    const sc = bl.secs[k].cards, sl = sc.filter(c => cardState(c.id) === 2).length, so = sc.filter(c => cardState(c.id) === 1).length;
+    row.innerHTML = `<span class="num">${done ? '✓' : k + 1}</span><span class="sname"><span></span>${bar2(sl, so, sc.length)}</span><small>${sl}/${s.count}</small>`;
+    row.querySelector('.sname span').textContent = s.name;
     row.onclick = () => { const i = s.idx.find(x => !d.has(x)); openBlock(curTid, i ?? s.idx[0]); };
     list.append(row);
   });
@@ -220,6 +230,27 @@ $('tCards').onclick = () => {
   openBlock(curTid, i);
 };
 $('tRep').onclick = () => openRepPick(curTid);
+$('tProg').onclick = () => openProg(curTid);
+function openProg(tid) {
+  const t = TOPIC[tid], box = $('pgList'); box.innerHTML = '';
+  const cnt = { 2: 0, 1: 0, '-1': 0, 0: 0 };
+  let sec = null, list = null;
+  for (const c of t.cards) {
+    const cs = cardState(c.id); cnt[cs]++;
+    if (c.s !== sec) { sec = c.s; const h = document.createElement('div'); h.className = 'label pg-sec'; h.textContent = sec; list = document.createElement('div'); list.className = 'glass list'; box.append(h, list); }
+    const row = document.createElement('button');
+    row.className = 'sec pg-row';
+    row.innerHTML = `<span class="pmark s${cs}">${MARK[cs]}</span><span class="sname"></span>`;
+    row.querySelector('.sname').textContent = c.q;
+    row.onclick = () => { progBack = tid; openCardView(c.id); };
+    list.append(row);
+  }
+  $('pgTitle').textContent = shortName(t);
+  $('pgSum').innerHTML = `<span class="pmark s2">✓✓ ${cnt[2]}</span> выучено · <span class="pmark s1">✓ ${cnt[1]}</span> один раз · <span class="pmark s-1">✗ ${cnt[-1]}</span> ошибка · <span class="pmark s0">○ ${cnt[0]}</span> не было`;
+  show('prog');
+}
+let progBack = null;
+$('pgBack').onclick = () => openTopic(curTid);
 $('tMix').onclick = () => startRun(curTid, 'mix');
 $('tRand').onclick = () => startRun(curTid, 'rand');
 $('tSeq').onclick = () => startRun(curTid, 'seq');
@@ -812,6 +843,9 @@ function showStudy() {
   $('studyScore').textContent = `${i + 1} / ${block.cards.length}`;
   $('studySheet').hidden = !sheetFor(run.tid, c.s);
   $('sTopic').textContent = curBlockLabel();
+  const cs = cardState(c.id);
+  $('sMark').textContent = { 2: '✓✓ выучено', 1: '✓ один раз', '-1': '✗ была ошибка', 0: '' }[cs];
+  $('sMark').className = 'pmark s' + cs; $('sMark').hidden = !cs;
   const st = c.strict && settings.mode === 'exam';
   $('sKind').textContent = st ? 'строго' : KIND[c.t];
   $('sKind').classList.toggle('strict', st);
@@ -1073,7 +1107,7 @@ function openCardView(id) {
   show('cardv');
   return true;
 }
-$('cardvBack').onclick = () => { history.replaceState(null, '', location.pathname); renderHome(); show('home'); };
+$('cardvBack').onclick = () => { history.replaceState(null, '', location.pathname); if (progBack) { const t = progBack; progBack = null; return openProg(t); } renderHome(); show('home'); };
 function renderSpeakTog() { $('speakTog').textContent = settings.speak ? '🔊 Вслух' : '🔇 Без звука'; }
 $('speakTog').onclick = () => { settings.speak = !settings.speak; saveSettings(); if (!settings.speak) hush(); renderSpeakTog(); };
 

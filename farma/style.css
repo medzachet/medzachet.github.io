@@ -112,7 +112,7 @@ h2 { font: 700 21px/1.2 Unbounded, Manrope, sans-serif; margin: 0; letter-spacin
 .topic-head h2 { font-size: 19px; }
 .topic-head .label { margin-top: 6px; }
 .ring { width: 76px; height: 76px; flex: none; border-radius: 50%; display: grid; place-items: center; box-shadow: var(--glow);
-  background: conic-gradient(var(--c1) 0 var(--p, 0%), var(--line) var(--p, 0%) 100%); }
+  background: conic-gradient(var(--c1) 0 var(--p, 0%), rgba(79,216,255,.32) var(--p, 0%) var(--p1, 0%), var(--line) var(--p1, 0%) 100%); }
 .ring div { width: 64px; height: 64px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; font: 700 16px Unbounded, Manrope, sans-serif; }
 .acts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
 .acts .act { grid-column: span 2; }
@@ -412,3 +412,20 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .rp-done { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; }
 .rp-done[hidden] { display: none; }
 .flag[hidden] { display: none !important; }
+
+/* ── Прогресс: бледное — один раз, яркое — выучено ── */
+.bar { position: relative; }
+.bar b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: linear-gradient(90deg, var(--c1), var(--c2)); opacity: .38; transition: width .4s ease; }
+.bar i { position: relative; }
+.once { color: var(--c1); opacity: .75; }
+.sec .sname > span, .sec .sname .bar { display: block; }
+.sec .sname .bar { margin-top: 5px; height: 3px; }
+.sec .sname .bar i { height: 100%; }
+.pmark { font-weight: 800; font-size: 12px; white-space: nowrap; }
+.pmark.s2 { color: #3ddc97; } .pmark.s1 { color: var(--c1); opacity: .8; } .pmark.s-1 { color: var(--hot); } .pmark.s0 { color: var(--muted); }
+#sMark { margin-left: auto; margin-right: 8px; }
+.pg-sum { line-height: 1.8; }
+.pg-sec { margin: 6px 2px -4px; }
+.pg-list { display: flex; flex-direction: column; gap: 10px; }
+.pg-row .pmark { min-width: 26px; text-align: center; font-size: 13px; }
+.pg-row .sname { font-weight: 600; font-size: 14px; }
