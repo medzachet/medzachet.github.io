@@ -1537,8 +1537,10 @@ function repCheck() {
     repLabel('');
     if (lastOne) showCheer(rp.scope === 'all' ? '🏆 Все определения пройдены!' : '🏁 Раздел пройден!');
     else if (rp.count % 3 === 0) showCheer(REP_POP[Math.floor(Math.random() * REP_POP.length)]);   // пузырь — иногда, как в опросе
-    speak(REP_SAY[Math.floor(Math.random() * REP_SAY.length)]);
-    // дальше — по кнопке
+    // между определениями — по кнопке; после последнего в разделе — сам к выбору раздела
+    speak(REP_SAY[Math.floor(Math.random() * REP_SAY.length)]).then(() => {
+      if (lastOne) setTimeout(() => { if (repLive(me) && me.part >= c.rp.length) { toast(me.scope === 'all' ? 'Все определения пройдены!' : 'Раздел пройден!'); hush(); rp = null; micUI = MIC_QUIZ; openRepPick(me.tid); } }, 1500);
+    });
     $('rpNext').textContent = lastOne ? (me.scope === 'all' ? '🏆 Все пройдены — к выбору раздела' : '🏁 Раздел пройден — к выбору раздела') : 'Следующее определение →';
     $('rpNext').hidden = false;
     return;
