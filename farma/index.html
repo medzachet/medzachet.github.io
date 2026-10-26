@@ -8,7 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css?v=64">
+  <link rel="stylesheet" href="style.css?v=65">
 </head>
 <body>
   <div class="bg-dots" aria-hidden="true"></div>
@@ -121,7 +121,7 @@
       <div class="seg"><button data-theme-set="light">Светлая</button><button data-theme-set="dark">Тёмная</button><button data-theme-set="system">Авто</button></div>
     </section>
     <button class="text-btn small help-link" data-help>? Справочник</button>
-    <p id="verLine" class="ver">версия 64</p>
+    <p id="verLine" class="ver">версия 65</p>
     <p class="disclaimer">Учебный тренажёр по лекциям колледжа. Не медицинская рекомендация — не используй его для подбора лечения.</p>
   </main>
 
@@ -129,22 +129,44 @@
   <main id="help" class="screen" hidden>
     <header class="row"><button id="helpBack" class="text-btn">← Назад</button></header>
     <h2>Справочник</h2>
+    <div class="label">Главный экран</div>
+    <div class="glass list help">
+      <details><summary>💊 Препараты · 📚 Справочник</summary><p>«Препараты» — вопросы про отдельные препараты: к какой группе относится и что о нём сказано в лекции. «Справочник» — все препараты по алфавиту или по темам: группа, показания, эффекты, побочные, противопоказания, особенности. Поиск — по первым буквам названия.</p></details>
+      <details><summary>Определения и Темы</summary><p>«Определения» — все определения к зачёту. «Темы» раскрываются списком по нажатию — лекции по порядку с прогрессом.</p></details>
+      <details><summary>Незаконченные</summary><p>Строка вверху появляется, если занятие прервано. Нажми — продолжишь с того же места.</p></details>
+    </div>
+    <div class="label">В теме</div>
     <div class="glass list help">
       <details><summary>▶ Карточки</summary><p>Учишь тему по кусочкам. Сначала читаешь несколько карточек одного раздела, листая пальцем, потом отвечаешь на них вперемешку. Пройденные кусочки запоминаются, и кнопка ведёт к следующему.</p></details>
+      <details><summary>Разделы</summary><p>Нажми на раздел — начнутся карточки именно этого раздела.</p></details>
       <details><summary>Микс</summary><p>Вся тема вперемешку без конца. Невыученное попадается чаще, выученное реже.</p></details>
       <details><summary>По лекции</summary><p>Вопросы по порядку, как в лекции. Место запоминается — можно продолжить с того же вопроса.</p></details>
-      <details><summary>Ошибки</summary><p>Только вопросы, где была ошибка. Ответишь верно сразу и без подсказки — вопрос уйдёт из списка.</p></details>
+      <details><summary>Ошибки</summary><p>Только вопросы, где была ошибка. Верный ответ сразу и без подсказки — вопрос уходит из списка.</p></details>
       <details><summary>🎲 10 наугад</summary><p>10 случайных вопросов из темы. Каждый раз новые, пока не пройдёшь всю тему по кругу.</p></details>
-      <details><summary>💊 Препараты</summary><p>Вопросы про отдельные препараты: к какой группе относится и что о нём сказано в лекции. Можно случайный препарат, группу или все вперемешку.</p></details>
-      <details><summary>Разделы</summary><p>Нажми на раздел в теме — начнутся карточки именно этого раздела.</p></details>
-      <details><summary>🎤 Как отвечать</summary><p>Удерживай кнопку микрофона и говори, отпусти — запись остановится. Можно говорить в несколько заходов или написать текстом. Потом «Проверить».</p></details>
-      <details><summary>💡 Подсказка и ещё попытки</summary><p>Подсказка открывается по шагу за нажатие. Если ответ неполный, приложение покажет, что уже названо, и даст подумать ещё — две попытки, потом покажет ответ. «Не знаю — ответ» сразу покажет правильный ответ.</p></details>
+      <details><summary>💊 Препараты темы</summary><p>Случайный препарат, микс или по порядку — только препараты этой лекции.</p></details>
+      <details><summary>🖼 Шпаргалки</summary><p>Картинки-конспекты к разделам. Открываются перед карточками раздела и по кнопке 🖼. Листаются свайпом (на компьютере — стрелками ‹ › или клавишами ← →), нажатие увеличивает. «⬇ Скачать PDF» — все шпаргалки темы одним файлом для печати.</p></details>
+    </div>
+    <div class="label">Определения</div>
+    <div class="glass list help">
+      <details><summary>▶ Все определения подряд</summary><p>Просто читать определения по порядку, без опроса. Место запоминается.</p></details>
+      <details><summary>🗣 Тренажёр определений</summary><p>Выбери все определения или один раздел. Марина называет термин и говорит часть определения — текст прячется, вспоминаешь и повторяешь (микрофоном или текстом), «✓ Проверить». Так часть за частью, пока определение не соберётся. «🔁 Послушать» — ещё раз, «Пропустить» — дальше. Место запоминается для каждого раздела.</p></details>
+      <details><summary>Строго или по смыслу</summary><p>В «Тренировке» определение засчитывается по главному смыслу, «Перед экзаменом» — строго, все части словами лекции (как на зачёте). Переключается в настройках.</p></details>
+    </div>
+    <div class="label">Как отвечать</div>
+    <div class="glass list help">
+      <details><summary>🎤 Голосом или текстом</summary><p>Удерживай кнопку микрофона и говори, отпусти — запись остановится. Можно говорить в несколько заходов и поправить текст руками. Потом «Проверить» или Enter. На компьютере распознавание работает не везде — удобнее печатать, голосом — с телефона (Chrome или Safari).</p></details>
+      <details><summary>💡 Подсказка и ещё попытки</summary><p>Подсказка открывается по шагу за нажатие. Если ответ неполный, приложение покажет, что уже названо, и даст подумать ещё — две попытки, потом покажет ответ. «Не знаю — ответ» сразу покажет правильный.</p></details>
       <details><summary>Засчитать</summary><p>Если ответ верный, но другими словами, и проверка не поняла — нажми «Засчитать».</p></details>
-      <details><summary>Выучено</summary><p>Вопрос считается выученным, когда на него дважды дан верный ответ сразу и без подсказки. Ошибка сбрасывает счёт.</p></details>
-      <details><summary>⏸ Пауза и «Продолжить»</summary><p>Пауза сохраняет занятие. Продолжить можно из темы или с главного экрана — строка «Незаконченные».</p></details>
-      <details><summary>🔊 и ↶ Прошлые</summary><p>🔊 — прочитать вопрос ещё раз. ↶ — посмотреть прошлые вопросы этого занятия.</p></details>
-      <details><summary>Тренировка или Экзамен</summary><p>В настройках. «Тренировка» прощает мелочи, «Экзамен» требует всё целиком. Определения в «Тренировке» засчитываются по главному смыслу, «Перед экзаменом» — строго, все части словами лекции.</p></details>
-      <details><summary>Прогресс</summary><p>Хранится только в этом телефоне и этом браузере. На другом телефоне или по другой ссылке начнётся с нуля.</p></details>
+      <details><summary>Выучено</summary><p>Вопрос выучен, когда на него дважды дан верный ответ сразу и без подсказки. Ошибка сбрасывает счёт.</p></details>
+      <details><summary>← Назад, 🔊, ↶</summary><p>«← Назад» во время опроса — пауза: занятие сохранится. 🔊 — прочитать вопрос ещё раз. ↶ — посмотреть прошлые вопросы занятия.</p></details>
+      <details><summary>⚑ Нашли ошибку в карточке</summary><p>Нажми ⚑ на карточке и коротко напиши, что не так, — сообщение уйдёт составителю.</p></details>
+    </div>
+    <div class="label">Настройки ⚙</div>
+    <div class="glass list help">
+      <details><summary>Тренировка или Перед экзаменом</summary><p>«Тренировка» прощает мелочи, «Перед экзаменом» требует всё целиком.</p></details>
+      <details><summary>Голос</summary><p>Вопросы читает Марина. Можно выключить чтение вслух, поменять скорость или голос телефона.</p></details>
+      <details><summary>Тема оформления</summary><p>Тёмная (по умолчанию), светлая или «Авто» — как в телефоне.</p></details>
+      <details><summary>Прогресс</summary><p>Хранится только в этом телефоне и этом браузере. На другом устройстве или в другом браузере начнётся с нуля.</p></details>
     </div>
     <p class="disclaimer">Учебный тренажёр по лекциям колледжа. Не медицинская рекомендация — не используй его для подбора лечения.</p>
   </main>
@@ -337,27 +359,27 @@
     </div>
   </main>
 
-  <script src="bank/_core.js?v=64"></script>
-  <script src="bank/vocab.js?v=64"></script>
-  <script src="bank/farm_def.js?v=64"></script>
-  <script src="bank/farm_t01.js?v=64"></script>
-  <script src="bank/farm_t02.js?v=64"></script>
-  <script src="bank/farm_t03.js?v=64"></script>
-  <script src="bank/farm_t04.js?v=64"></script>
-  <script src="bank/farm_t05.js?v=64"></script>
-  <script src="bank/farm_t06.js?v=64"></script>
-  <script src="bank/farm_t07.js?v=64"></script>
-  <script src="bank/farm_t08.js?v=64"></script>
-  <script src="bank/farm_t09.js?v=64"></script>
-  <script src="bank/farm_t10.js?v=64"></script>
-  <script src="bank/farm_t11.js?v=64"></script>
-  <script src="bank/farm_drugs.js?v=64"></script>
-  <script src="checker.js?v=64"></script>
-  <script src="cheers.js?v=64"></script>
-  <script src="sheets/index.js?v=64"></script>
-  <script src="sheets/pdf.js?v=64"></script>
-  <script src="speechtext.js?v=64"></script>
-  <script src="audio/index.js?v=64"></script>
-  <script src="app.js?v=64"></script>
+  <script src="bank/_core.js?v=65"></script>
+  <script src="bank/vocab.js?v=65"></script>
+  <script src="bank/farm_def.js?v=65"></script>
+  <script src="bank/farm_t01.js?v=65"></script>
+  <script src="bank/farm_t02.js?v=65"></script>
+  <script src="bank/farm_t03.js?v=65"></script>
+  <script src="bank/farm_t04.js?v=65"></script>
+  <script src="bank/farm_t05.js?v=65"></script>
+  <script src="bank/farm_t06.js?v=65"></script>
+  <script src="bank/farm_t07.js?v=65"></script>
+  <script src="bank/farm_t08.js?v=65"></script>
+  <script src="bank/farm_t09.js?v=65"></script>
+  <script src="bank/farm_t10.js?v=65"></script>
+  <script src="bank/farm_t11.js?v=65"></script>
+  <script src="bank/farm_drugs.js?v=65"></script>
+  <script src="checker.js?v=65"></script>
+  <script src="cheers.js?v=65"></script>
+  <script src="sheets/index.js?v=65"></script>
+  <script src="sheets/pdf.js?v=65"></script>
+  <script src="speechtext.js?v=65"></script>
+  <script src="audio/index.js?v=65"></script>
+  <script src="app.js?v=65"></script>
 </body>
 </html>
