@@ -389,8 +389,4 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .sheet-slide.zoom img { width: 230%; max-width: none; cursor: zoom-out; }
 @media (min-width: 592px) { .sheet-track { margin: 0; border-radius: 14px; } }
 .study-nav.eq { grid-template-columns: 1fr 1fr; }
-.sheet-nav { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 8px; }
-.sheet-nav .btn { padding-left: 4px; padding-right: 4px; font-size: 15px; }
-#shPrev, #shNext { font-size: 20px; }
-#shNext.wide-txt { font-size: 15px; }
-.pdf-btn { display: grid; place-items: center; text-decoration: none; font-weight: 700; color: var(--c1); }
+.pdf-btn { text-decoration: none; font-weight: 700; font-size: 14px; color: var(--c1); padding: 7px 14px; border: 1px solid var(--c1); border-radius: 999px; box-shadow: var(--glow); }
