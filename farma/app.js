@@ -1012,7 +1012,8 @@ function showCard(card) {
   say(current.q);
 }
 $('repeat').onclick = () => { abortListening(); speak(current.q); };
-// ⚑ Замечание: бот @medzachetbot сразу знает, о какой карточке речь
+// ⚑ Замечание — выключено (2026-10-26, по просьбе Оли: вопросы она проверяет сама). Кнопки flagQ/flagS/flagC скрыты в index.html; вернуть — убрать hidden.
+// Бот @medzachetbot сразу знает, о какой карточке речь
 const BOT = 'medzachetbot';
 const FLAG_URL = 'https://zachet-pravki.osanka-telo.workers.dev/flag';
 const tgLink = c => `https://t.me/${BOT}?start=c_${c.id}`;
