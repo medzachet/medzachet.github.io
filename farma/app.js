@@ -353,6 +353,7 @@ function startListening() {
     if (r !== rec && r !== finishing) return;
     const heard = mergeResults(e.results);
     $(ui.input).value = (baseText ? baseText + ' ' : '') + heard;
+    const box = $(ui.input); box.scrollTop = box.scrollHeight;   // видно то, что говоришь сейчас
   };
   r.onerror = e => {
     if (ui !== MIC_QUIZ) { $(ui.label).textContent = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'Нет доступа к микрофону — печатай ответ' : 'Распознавание недоступно — печатай ответ'; return; }
@@ -370,6 +371,7 @@ function startListening() {
     if (r === finishing) finishing = null;
     // Исправляем ослышки терминов по словарю лекций
     $(ui.input).value = dropRepeats(Checker.correctTerms($(ui.input).value, window.VOCAB));
+    $(ui.input).scrollTop = $(ui.input).scrollHeight;
     updateMic();
   };
   try { r.start(); } catch { rec = null; }
