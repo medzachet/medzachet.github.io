@@ -346,7 +346,8 @@ function startListening() {
   baseText = $(ui.input).value.trim();
   const r = new Recognition();
   rec = r;
-  r.lang = 'ru-RU'; r.continuous = true; r.interimResults = true;
+  // Android и iPhone в непрерывном режиме дублируют фразы — там пишем по фразе и перезапускаем, пока кнопку держат
+  r.lang = 'ru-RU'; r.continuous = !(IS_ANDROID || IS_IOS); r.interimResults = true;
   // Пишем только в своём «нажатии»: поздние результаты старой записи игнорируются
   r.onresult = e => {
     if (r !== rec && r !== finishing) return;
@@ -368,7 +369,7 @@ function startListening() {
     if (r === rec) rec = null;
     if (r === finishing) finishing = null;
     // Исправляем ослышки терминов по словарю лекций
-    $(ui.input).value = Checker.correctTerms($(ui.input).value, window.VOCAB);
+    $(ui.input).value = dropRepeats(Checker.correctTerms($(ui.input).value, window.VOCAB));
     updateMic();
   };
   try { r.start(); } catch { rec = null; }
@@ -387,6 +388,18 @@ function mergeResults(results) {
     else out += ' ' + t;
   }
   return out;
+}
+// Подстраховка от дублей распознавания: «психотропные средства психотропные средства» → один раз (повтор 2+ слов подряд)
+function dropRepeats(text) {
+  let w = text.split(/\s+/).filter(Boolean), changed = true;
+  const key = x => x.toLowerCase().replace(/[^a-zа-яё0-9]/gi, '');
+  while (changed) {
+    changed = false;
+    for (let n = Math.floor(w.length / 2); n >= 2 && !changed; n--)
+      for (let i = 0; i + 2 * n <= w.length; i++)
+        if (w.slice(i, i + n).every((x, k) => key(x) === key(w[i + n + k]))) { w.splice(i + n, n); changed = true; break; }
+  }
+  return w.join(' ');
 }
 function stopListening() {
   holding = false;
@@ -1489,6 +1502,7 @@ const repLabel = t => { $('rpLabel').textContent = t; };
 const repLive = me => rp === me && screenNow === 'rep';
 async function repCard() {
   rp.part = 0; rp.fails = 0; rp.shown = false;
+  $('rpNext').hidden = true;
   $('rpAnswer').value = ''; $('rpFb').textContent = '';
   repRender();
   const me = rp;
@@ -1523,13 +1537,10 @@ function repCheck() {
     repLabel('');
     if (lastOne) showCheer(rp.scope === 'all' ? '🏆 Все определения пройдены!' : '🏁 Раздел пройден!');
     else if (rp.count % 3 === 0) showCheer(REP_POP[Math.floor(Math.random() * REP_POP.length)]);   // пузырь — иногда, как в опросе
-    speak(REP_SAY[Math.floor(Math.random() * REP_SAY.length)]).then(() => {
-      setTimeout(() => {
-        if (!repLive(me) || me.part < c.rp.length) return;
-        if (lastOne) { toast(me.scope === 'all' ? 'Все определения пройдены — можно начать заново' : 'Раздел пройден!'); return openRepPick(me.tid); }
-        repNext();
-      }, 1200);
-    });
+    speak(REP_SAY[Math.floor(Math.random() * REP_SAY.length)]);
+    // дальше — по кнопке
+    $('rpNext').textContent = lastOne ? (me.scope === 'all' ? '🏆 Все пройдены — к выбору раздела' : '🏁 Раздел пройден — к выбору раздела') : 'Следующее определение →';
+    $('rpNext').hidden = false;
     return;
   }
   rp.fails++;
@@ -1537,6 +1548,11 @@ function repCheck() {
   $('rpAnswer').value = '';
   repPlay();
 }
+$('rpNext').onclick = () => {
+  if (!rp) return;
+  if (rp.part >= rp.cards[rp.i].rp.length && rp.i === rp.cards.length - 1) { const t = rp.tid; hush(); rp = null; micUI = MIC_QUIZ; return openRepPick(t); }
+  repNext();
+};
 function repNext() { abortListening(); hush(); rp.i = (rp.i + 1) % rp.cards.length; repAt()[rp.scope] = rp.i; saveSettings(); repCard(); }
 $('rpCheck').onclick = () => { stopListening(); setTimeout(repCheck, rec || finishing ? 600 : 0); };
 $('rpAnswer').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); repCheck(); } });
