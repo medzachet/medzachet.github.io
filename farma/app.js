@@ -730,7 +730,10 @@ const sheetGo = i => { const tr = $('shTrack'); tr.scrollTo({ left: i * tr.clien
 // на компьютере свайпа нет — стрелки по бокам (видны только при мыши) и клавиши ← →
 $('shL').onclick = () => { if (sheetIdx > 0) sheetGo(sheetIdx - 1); };
 $('shR').onclick = () => { if (sheetIdx < sheetList.length - 1) sheetGo(sheetIdx + 1); };
-document.addEventListener('keydown', e => { if (screenNow !== 'sheet') return; if (e.key === 'ArrowLeft') $('shL').click(); if (e.key === 'ArrowRight') $('shR').click(); });
+// стрелка при нажатии клавиши на миг подсвечивается (без рамки фокуса)
+const shHit = b => { if (b.hidden) return; b.click(); b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 220); };
+document.addEventListener('keydown', e => { if (screenNow !== 'sheet') return; if (e.key === 'ArrowLeft') shHit($('shL')); if (e.key === 'ArrowRight') shHit($('shR')); });
+for (const b of ['shL', 'shR']) $(b).addEventListener('mousedown', e => e.preventDefault());   // не забирать фокус
 $('shNext').onclick = () => {
   if (sheetIdx < sheetList.length - 1) return sheetGo(sheetIdx + 1);
   if (sheetDone) return sheetDone();

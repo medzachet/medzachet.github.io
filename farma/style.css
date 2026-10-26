@@ -394,6 +394,7 @@ textarea:focus { outline: none; border-color: var(--c1); box-shadow: var(--glow)
 .sh-arrow { display: none; position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 72px; padding: 0; cursor: pointer;
   border: 0; background: none; color: var(--muted); font-size: 46px; font-weight: 300; line-height: 1; opacity: .75; transition: color .15s, opacity .15s; }
 .sh-arrow.l { left: 4px; } .sh-arrow.r { right: 4px; }
-.sh-arrow:hover { color: var(--c1); opacity: 1; }
+.sh-arrow:hover, .sh-arrow.hit { color: var(--c1); opacity: 1; }
+.sh-arrow:focus, .sh-arrow:focus-visible { outline: none; box-shadow: none; }
 @media (hover: hover) and (pointer: fine) { .sh-arrow:not([hidden]) { display: block; } }
 @media (min-width: 700px) { .sh-arrow.l { left: -58px; } .sh-arrow.r { right: -58px; } }   /* на широком экране — за краями картинки */
